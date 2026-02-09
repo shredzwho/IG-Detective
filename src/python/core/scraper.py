@@ -1,39 +1,47 @@
+import instaloader
 from src.python.core.models import User, Post
-import requests
 
 class InstagramScraper:
-    BASE_URL = "https://www.instagram.com"
+    def __init__(self, loader: instaloader.Instaloader):
+        self.L = loader
 
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
-        })
-
-    def get_profile(self, username) -> User:
-        """Fetch profile details for a given username."""
-        # Placeholder logic simulating a successful fetch
-        return User(
-            username=username,
-            full_name="Test User",
-            biography="This is a test biography.",
-            follower_count=1000,
-            following_count=500,
-            is_private=False,
-            is_verified=True
-        )
-
-    def get_posts(self, username, count=10) -> list[Post]:
-        """Fetch n recent posts."""
-        # Placeholder logic
-        return [
-            Post(
-                id="1234567890",
-                shortcode="B_123abc",
-                caption="Hello World!",
-                likes_count=150,
-                comments_count=20,
-                owner_username=username,
-                is_video=False
+    def get_profile(self, username: str) -> User:
+        """Fetch profile details for a given username using instaloader."""
+        try:
+            profile = instaloader.Profile.from_username(self.L.context, username)
+            return User(
+                username=profile.username,
+                full_name=profile.full_name,
+                biography=profile.biography,
+                follower_count=profile.followers,
+                following_count=profile.followees,
+                is_private=profile.is_private,
+                is_verified=profile.is_verified,
+                profile_pic_url=profile.profile_pic_url,
+                external_url=profile.external_url
             )
-        ]
+        except Exception as e:
+            raise Exception(f"Failed to fetch profile: {e}")
+
+    def get_posts(self, username: str, count: int = 10) -> list[Post]:
+        """Fetch n recent posts using instaloader."""
+        try:
+            profile = instaloader.Profile.from_username(self.L.context, username)
+            posts = []
+            for post in profile.get_posts():
+                posts.append(Post(
+                    id=str(post.mediaid),
+                    shortcode=post.shortcode,
+                    caption=post.caption,
+                    likes_count=post.likes,
+                    comments_count=post.comments,
+                    timestamp=post.date_utc,
+                    owner_username=post.owner_username,
+                    is_video=post.is_video,
+                    video_view_count=post.video_view_count if post.is_video else None
+                ))
+                if len(posts) >= count:
+                    break
+            return posts
+        except Exception as e:
+            raise Exception(f"Failed to fetch posts: {e}")

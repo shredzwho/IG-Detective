@@ -3,3 +3,4 @@ numpy
 pytest
 click
 requests-mock
+instaloader
