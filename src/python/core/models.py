@@ -13,6 +13,9 @@ class User:
     is_verified: bool = False
     profile_pic_url: Optional[str] = None
     external_url: Optional[str] = None
+    business_email: Optional[str] = None
+    business_phone: Optional[str] = None
+    business_category: Optional[str] = None
 
 @dataclass
 class Location:

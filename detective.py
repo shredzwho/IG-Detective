@@ -20,6 +20,29 @@ def print_banner():
     print("    IG-Detective - Open Source Intelligence Tool for Instagram")
     print("    ----------------------------------------------------------\n")
 
+def set_secure_permissions(filepath):
+    """Set file permissions to 600 (read/write only by owner)."""
+    if os.path.exists(filepath):
+        os.chmod(filepath, 0o600)
+        # print(f"Secured permissions for {filepath}")
+
+def cleanup_session(username):
+    """Delete session file if it exists."""
+    session_file = f"session-{username}"
+    # check in local dir and config dir
+    paths = [
+        session_file,
+        os.path.join(os.path.expanduser("~"), ".config/instaloader", session_file)
+    ]
+    
+    for path in paths:
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                print(f"Deleted session file: {path}")
+            except OSError as e:
+                print(f"Error deleting {path}: {e}")
+
 def login():
     L = instaloader.Instaloader()
     
@@ -39,6 +62,7 @@ def login():
                 L.login(username, password)
                 print("Login successful!")
                 L.save_session_to_file()
+                set_secure_permissions(f"session-{username}")
                 print("Session saved to file.")
                 return L
             except instaloader.TwoFactorAuthRequiredException:
@@ -47,6 +71,7 @@ def login():
                     L.two_factor_login(code)
                     print("Login successful!")
                     L.save_session_to_file()
+                    set_secure_permissions(f"session-{username}")
                     print("Session saved to file.")
                     return L
                 except Exception as e:
@@ -99,6 +124,12 @@ def main_menu(L):
                 print(f"Verified: {user.is_verified}")
                 print(f"Private: {user.is_private}")
                 print(f"Pic URL: {user.profile_pic_url}")
+                if user.business_category:
+                    print(f"Category: {user.business_category}")
+                if user.business_email:
+                    print(f"Email: {user.business_email}")
+                if user.business_phone:
+                    print(f"Phone: {user.business_phone}")
                 input("\nPress Enter to continue...")
             except Exception as e:
                 print(f"Error: {e}")
@@ -147,6 +178,14 @@ def main_menu(L):
                 input("\nPress Enter to continue...")
 
         elif choice == '4':
+            print("\n1. Logout & Keep Session")
+            print("2. Logout & Delete Session (Secure)")
+            sub_choice = input("Enter choice (1-2): ").strip()
+            
+            if sub_choice == '2':
+                if L.context.is_logged_in:
+                    cleanup_session(L.context.username)
+            
             print("\nExiting...")
             sys.exit(0)
         

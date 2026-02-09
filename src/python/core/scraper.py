@@ -18,7 +18,10 @@ class InstagramScraper:
                 is_private=profile.is_private,
                 is_verified=profile.is_verified,
                 profile_pic_url=profile.profile_pic_url,
-                external_url=profile.external_url
+                external_url=profile.external_url,
+                business_email=profile.business_email,
+                business_phone=profile.business_phone_number,
+                business_category=profile.business_category_name
             )
         except Exception as e:
             raise Exception(f"Failed to fetch profile: {e}")
