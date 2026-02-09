@@ -1,5 +1,7 @@
 # IG-Detective
 
+**Created by [@shredzwho](https://github.com/shredzwho)**
+
 **IG-Detective** is a Python-based Open Source Intelligence (OSINT) tool for Instagram. It allows you to gather information, fetch recent posts, and download profiles using a simple command-line interface.
 
 > ⚠️ **Disclaimer**: This tool is for educational and research purposes only. Use it responsibly and in accordance with Instagram's Terms of Service. The author is not responsible for any misuse.
