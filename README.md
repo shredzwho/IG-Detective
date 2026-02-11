@@ -2,17 +2,21 @@
 
 **Created by [@shredzwho](https://github.com/shredzwho)**
 
-**IG-Detective** is a Python-based Open Source Intelligence (OSINT) tool for Instagram. It allows you to gather information, fetch recent posts, and download profiles using a simple command-line interface.
+**IG-Detective** is a Python-based Open Source Intelligence (OSINT) tool for Instagram. It offers an **interactive shell** to perform analysis on Instagram accounts, gather information, fetch recent posts, analyze hashtags, and extract contact details in a safe, rate-limited manner.
 
 > ⚠️ **Disclaimer**: This tool is for educational and research purposes only. Use it responsibly and in accordance with Instagram's Terms of Service. The author is not responsible for any misuse.
 
 ## Features
 
-- **Profile Information**: Fetch details like bio, follower count, following count, and verification status.
-- **Recent Posts**: View a summary of the latest posts (captions, likes, comments, dates).
-- **Download Profile**: Download all posts and stories from a target profile to your local machine.
-- **Session Management**: Securely login with your Instagram account and save the session for future use (supports 2FA).
-- **Interactive Menu**: Easy-to-use terminal interface.
+- **Interactive Shell**: specific commands to analyze targets (`target`, `info`, `followers`, etc.).
+- **Advanced Analysis**: 
+    - Fetch detailed profile info.
+    - List followers and followings.
+    - Analyze most used hashtags from recent posts.
+    - View recent posts summaries (likes, comments, captions).
+- **Safe Scraping**: 
+    - `fwersemail`: Extract emails and phone numbers from followers with built-in **rate limiting** and **batching** to avoid detection.
+- **Session Management**: Secure login with 2FA support and session persistence.
 
 ## Installation
 
@@ -41,31 +45,46 @@ Run the main interactive tool:
 python3 detective.py
 ```
 
-### Login Options
-1.  **Username & Password**: Enter your credentials. Supports Two-Factor Authentication (2FA).
-2.  **Session File**: If you've logged in before, the tool saves a session file. Use this option to skip entering credentials.
+### Quick Start
 
-> **Note**: Logging in is highly recommended as Instagram severely limits anonymous scraping.
+1.  **Login**: Enter credentials. Session is saved for future use.
+2.  **Set Target**: 
+    ```bash
+    (ig-detective) target <username>
+    ```
+3.  **Run Commands**:
+    ```bash
+    (ig-detective: username) info
+    (ig-detective: username) followers 50
+    (ig-detective: username) hashtags 20
+    ```
 
-### Menu Options
-1.  **Get User Profile Info**: Enter a target username to see their profile summary.
-2.  **Get Recent Posts**: List the recent posts for a target user.
-3.  **Download Profile**: Downloads posts and metadata to a folder named after the user.
+### Available Commands
 
-## CLI Usage (Advanced)
+| Command | Description | Usage |
+| :--- | :--- | :--- |
+| `target` | Set the target username for analysis. | `target <username>` |
+| `info` | Show detailed profile information. | `info` |
+| `followers` | List followers. | `followers [limit]` |
+| `followings` | List users followed by target. | `followings [limit]` |
+| `posts` | Show recent posts summary. | `posts [limit]` |
+| `hashtags` | Analyze hashtags from recent posts. | `hashtags [limit_posts]` |
+| `propic` | Download profile picture. | `propic` |
+| `fwersemail` | Scan followers for email/phone (Slow/Safe Mode). | `fwersemail [limit]` |
+| `clear` | Clear the screen. | `clear` |
+| `logout` | Logout and optionally delete session. | `logout` |
+| `exit` | Exit the tool. | `exit` |
 
-IG-Detective also includes a direct CLI interface for scripting:
+### Safety Note on Advanced Scraping
 
-```bash
-# Get profile info
-python3 src/python/cli.py profile <username>
-
-# Get recent posts
-python3 src/python/cli.py posts <username>
-```
+The `fwersemail` command allows you to extract business emails and phone numbers from a target's followers. 
+- **Safety First**: This command employs **random delays (10-20s)** and **batch pauses** to prevent your account from being flagged or rate-limited. 
+- **Be Patient**: Scanning 50 followers can take 10-15 minutes. This is intentional.
 
 ## Contributing
+
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
+
 [MIT](https://choosealicense.com/licenses/mit/)

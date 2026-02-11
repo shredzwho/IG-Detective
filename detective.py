@@ -19,12 +19,14 @@ def print_banner():
     """)
     print("    IG-Detective - Open Source Intelligence Tool for Instagram")
     print("    ----------------------------------------------------------\n")
+    print("Disclaimer: This tool is for educational purposes only. Please use it responsibly and respect the privacy of others.\n")
+    print("Created by @shredzwho\n")
+
 
 def set_secure_permissions(filepath):
     """Set file permissions to 600 (read/write only by owner)."""
     if os.path.exists(filepath):
         os.chmod(filepath, 0o600)
-        # print(f"Secured permissions for {filepath}")
 
 def cleanup_session(username):
     """Delete session file if it exists."""
@@ -98,103 +100,233 @@ def login():
         else:
             print("Invalid choice.")
 
-def main_menu(L):
-    scraper = InstagramScraper(L)
+import cmd
+from src.python.core.analysis import DataAnalyzer
+
+class InteractiveShell(cmd.Cmd):
+    intro = 'Welcome to IG-Detective Shell. Type help or ? to list commands.\n'
+    prompt = '(ig-detective) '
     
-    while True:
+    def __init__(self, loader):
+        super().__init__()
+        self.L = loader
+        self.scraper = InstagramScraper(loader)
+        self.target = None
+        self.target_data = None 
+
+    def do_target(self, arg):
+        """Set target username: target [username]"""
+        if not arg:
+            print("Usage: target [username]")
+            return
+        
+        username = arg.strip()
+        print(f"Checking if user '{username}' exists...")
+        try:
+            self.target_data = self.scraper.get_user_info(username)
+            self.target = username
+            self.prompt = f'(ig-detective: {username}) '
+            print(f"Target set to: {username}")
+        except Exception as e:
+            print(f"Error setting target: {e}")
+            self.target = None
+            self.prompt = '(ig-detective) '
+
+    def do_info(self, arg):
+        """Show current target info."""
+        if not self.target:
+            print("No target set. Use 'target [username]' first.")
+            return
+
+        print("\n" + "="*40)
+        print(f"Target: {self.target_data['username']}")
+        print("-" * 40)
+        print(f"ID: {self.target_data['id']}")
+        print(f"Name: {self.target_data['full_name']}")
+        print(f"Bio: {self.target_data['biography']}")
+        print(f"Followers: {self.target_data['followers']}")
+        print(f"Following: {self.target_data['followees']}")
+        print(f"Private: {self.target_data['is_private']}")
+        print(f"Verified: {self.target_data['is_verified']}")
+        print(f"Business: {self.target_data['is_business_account']} ({self.target_data['business_category']})")
+        print(f"Profile Pic: {self.target_data['profile_pic_url']}")
+        print("="*40 + "\n")
+
+    def do_followers(self, arg):
+        """Get followers list: followers [limit]"""
+        if not self.target:
+            print("No target set.")
+            return
+        
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+            
+        print(f"Fetching {limit} followers...")
+        try:
+            followers = self.scraper.get_followers(self.target, limit)
+            print(f"\nFound {len(followers)} followers:")
+            for idx, user in enumerate(followers, 1):
+                print(f"{idx}. {user.username} - {user.full_name}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_followings(self, arg):
+        """Get followings list: followings [limit]"""
+        if not self.target:
+            print("No target set.")
+            return
+        
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+            
+        print(f"Fetching {limit} followings...")
+        try:
+            followings = self.scraper.get_followings(self.target, limit)
+            print(f"\nFound {len(followings)} followings:")
+            for idx, user in enumerate(followings, 1):
+                print(f"{idx}. {user.username} - {user.full_name}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_posts(self, arg):
+        """Get recent posts: posts [limit]"""
+        if not self.target:
+            print("No target set.")
+            return
+            
+        limit = 10
+        if arg.isdigit():
+            limit = int(arg)
+            
+        print(f"Fetching {limit} posts...")
+        try:
+            posts = self.scraper.get_posts(self.target, limit)
+            for post in posts:
+                print("-" * 40)
+                print(f"ID: {post.id}")
+                print(f"Date: {post.timestamp}")
+                print(f"Likes: {post.likes_count} | Comments: {post.comments_count}")
+                if post.is_video:
+                    print(f"Views: {post.video_view_count}")
+                print(f"Caption: {post.caption[:100]}..." if post.caption and len(post.caption) > 100 else f"Caption: {post.caption}")
+        except Exception as e:
+             print(f"Error: {e}")
+
+    def do_hashtags(self, arg):
+        """Analyze hashtags from recent posts: hashtags [limit_posts]"""
+        if not self.target:
+             print("No target set.")
+             return
+        
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+            
+        print(f"Analyzing hashtags from last {limit} posts...")
+        try:
+            posts = self.scraper.get_posts(self.target, limit)
+            top_hashtags = DataAnalyzer.get_most_used_hashtags(posts)
+            
+            print("\nTop Hashtags Used:")
+            for tag, count in top_hashtags:
+                print(f"#{tag}: {count}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def do_propic(self, arg):
+        """Download profile picture."""
+        if not self.target:
+            print("No target set.")
+            return
+        
+        print(f"Downloading profile picture for {self.target}...")
+        try:
+             self.L.download_profile(self.target, profile_pic_only=True)
+             print("Download complete.")
+        except Exception as e:
+             print(f"Error: {e}")
+
+    def do_clear(self, arg):
+        """Clear screen."""
         clear_screen()
         print_banner()
-        print(f"Logged in as: {L.context.username if L.context.is_logged_in else 'Guest'}\n")
-        print("1. Get User Profile Info")
-        print("2. Get Recent Posts")
-        print("3. Download Profile (Posts/Stories)")
-        print("4. Logout & Exit")
-        
-        choice = input("\nEnter your choice (1-4): ").strip()
-        
-        if choice == '1':
-            target_username = input("\nEnter target username: ").strip()
-            try:
-                user = scraper.get_profile(target_username)
-                print(f"\nUsername: {user.username}")
-                print(f"Full Name: {user.full_name}")
-                print(f"Bio: {user.biography}")
-                print(f"Followers: {user.follower_count}")
-                print(f"Following: {user.following_count}")
-                print(f"Verified: {user.is_verified}")
-                print(f"Private: {user.is_private}")
-                print(f"Pic URL: {user.profile_pic_url}")
-                if user.business_category:
-                    print(f"Category: {user.business_category}")
-                if user.business_email:
-                    print(f"Email: {user.business_email}")
-                if user.business_phone:
-                    print(f"Phone: {user.business_phone}")
-                input("\nPress Enter to continue...")
-            except Exception as e:
-                print(f"Error: {e}")
-                input("\nPress Enter to continue...")
 
-        elif choice == '2':
-            target_username = input("\nEnter target username: ").strip()
-            count = input("How many posts? (default 10): ").strip()
-            if not count:
-                count = 10
-            else:
-                try:
-                    count = int(count)
-                except ValueError:
-                    print("Invalid number, using default 10.")
-                    count = 10
-            
-            try:
-                print(f"\nFetching {count} posts for {target_username}...")
-                posts = scraper.get_posts(target_username, count)
-                for post in posts:
-                    print("-" * 40)
-                    print(f"ID: {post.id} ({post.shortcode})")
-                    print(f"Date: {post.timestamp}")
-                    print(f"Likes: {post.likes_count} | Comments: {post.comments_count}")
-                    if post.is_video:
-                        print(f"Views: {post.video_view_count}")
-                    if post.caption:
-                        print(f"Caption: {post.caption[:100]}..." if len(post.caption) > 100 else f"Caption: {post.caption}")
-                print("-" * 40)
-                input("\nPress Enter to continue...")
-            except Exception as e:
-                print(f"Error: {e}")
-                input("\nPress Enter to continue...")
+    def do_exit(self, arg):
+        """Exit the shell."""
+        print("Exiting...")
+        return True
 
-        elif choice == '3':
-            target_username = input("\nEnter target username to download: ").strip()
-            try:
-                print(f"\nDownloading profile {target_username}...")
-                profile = instaloader.Profile.from_username(L.context, target_username)
-                L.download_profile(profile, profile_pic_only=False)
-                print(f"\nDownload complete! Check the folder '{target_username}'.")
-                input("\nPress Enter to continue...")
-            except Exception as e:
-                print(f"Error downloading: {e}")
-                input("\nPress Enter to continue...")
+    def do_quit(self, arg):
+        """Exit the shell."""
+        return self.do_exit(arg)
 
-        elif choice == '4':
-            print("\n1. Logout & Keep Session")
-            print("2. Logout & Delete Session (Secure)")
-            sub_choice = input("Enter choice (1-2): ").strip()
-            
-            if sub_choice == '2':
-                if L.context.is_logged_in:
-                    cleanup_session(L.context.username)
-            
-            print("\nExiting...")
-            sys.exit(0)
+    def do_fwersemail(self, arg):
+        """
+        Scan followers for emails/phones: fwersemail [limit]
+        WARNING: Slow operation to ensure safety.
+        """
+        if not self.target:
+            print("No target set.")
+            return
+
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+
+        csv_filename = f"{self.target}_followers_contact.csv"
         
-        else:
-            print("Invalid choice.")
+        print(f"\n[*] Scanning {limit} followers of {self.target} for contact info...")
+        print(f"[*] Results will be saved to {csv_filename}")
+        print("[!] Press Ctrl+C to stop scanning safely.\n")
+
+        found_count = 0
+        try:
+            # Create/Open CSV and write header
+            mode = 'w'
+            if os.path.exists(csv_filename):
+                mode = 'a'
+            
+            with open(csv_filename, mode, newline='', encoding='utf-8') as f:
+                import csv
+                writer = csv.DictWriter(f, fieldnames=["username", "full_name", "email", "phone"])
+                if mode == 'w':
+                    writer.writeheader()
+                
+                # Iterate generator
+                for contact in self.scraper.scan_followers_for_contact(self.target, limit):
+                    writer.writerow(contact)
+                    f.flush() # Ensure it's written immediately
+                    print(f"[+] Found: {contact['username']} | {contact['email']} | {contact['phone']}")
+                    found_count += 1
+                    
+        except KeyboardInterrupt:
+            print("\n[!] Scan stopped by user.")
+        except Exception as e:
+            print(f"\n[!] Error: {e}")
+        finally:
+            print(f"\n[*] Scan complete. Found {found_count} contacts.")
+            print(f"[*] Saved to {csv_filename}")
+
+    def do_fwingsemail(self, arg):
+        """
+        Scan followings for emails/phones: fwingsemail [limit]
+        WARNING: Slow operation to ensure safety.
+        """
+        # Logic is identical to fwersemail but using get_followees (not implemented in shared scraper yet efficiently, 
+        # so for now we will reuse similar logic or just warn it's prospective)
+        print("Feature coming soon! (Use fwersemail for now)")
+
 
 if __name__ == "__main__":
     clear_screen()
     print_banner()
     loader = login()
     if loader:
-        main_menu(loader)
+        try:
+            shell = InteractiveShell(loader)
+            shell.cmdloop()
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            sys.exit(0)
