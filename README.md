@@ -1,90 +1,94 @@
-# IG-Detective
+# IG-Detective 🕵️‍♂️📸
 
 **Created by [@shredzwho](https://github.com/shredzwho)**
 
-**IG-Detective** is a Python-based Open Source Intelligence (OSINT) tool for Instagram. It offers an **interactive shell** to perform analysis on Instagram accounts, gather information, fetch recent posts, analyze hashtags, and extract contact details in a safe, rate-limited manner.
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rich UI](https://img.shields.io/badge/UI-Rich--Aesthetics-brightgreen)](https://github.com/Textualize/rich)
 
-> ⚠️ **Disclaimer**: This tool is for educational and research purposes only. Use it responsibly and in accordance with Instagram's Terms of Service. The author is not responsible for any misuse.
+**IG-Detective** is a high-performance, Python-based Open Source Intelligence (OSINT) tool for Instagram. It offers a premium interactive shell to perform deep analysis on Instagram accounts, extract location history, mapping interactions, and generating automated investigative reports.
 
-## Features
+> [!WARNING]
+> **Disclaimer**: This tool is for educational and research purposes only. Use it responsibly and in accordance with Instagram's Terms of Service. The author is not responsible for any misuse.
 
-- **Interactive Shell**: specific commands to analyze targets (`target`, `info`, `followers`, etc.).
-- **Advanced Analysis**: 
-    - Fetch detailed profile info.
-    - List followers and followings.
-    - Analyze most used hashtags from recent posts.
-    - View recent posts summaries (likes, comments, captions).
-- **Safe Scraping**: 
-    - `fwersemail`: Extract emails and phone numbers from followers with built-in **rate limiting** and **batching** to avoid detection.
-- **Session Management**: Secure login with 2FA support and session persistence.
+---
 
-## Installation
+## ⚡ Features
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/shredzwho/IG-Detective.git
-    cd IG-Detective
-    ```
+### 🔍 Core Reconnaissance
+- **User Info**: Comprehensive profile details (ID, Bio, Followers, Business status).
+- **Followers/Following**: List and export target's social network.
+- **Post Analysis**: Detailed breakdown of recent content, likes, and comments.
 
-2.  **Create a Virtual Environment** (Optional but Recommended):
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-    ```
+### 📍 Advanced OSINT (New!)
+- **Location History (`addrs`)**: Extract GPS coordinates from posts and reverse-geocode them to readable addresses.
+- **Interaction Mapping**:
+    - `tagged`: Identify users tagged in the target's posts.
+    - `commenters`: Rank followers by engagement level and frequency.
+- **Account Statistics (`stats`)**: Detailed aggregate analysis of engagement and media type distribution.
+- **Story Extraction (`stories`)**: Fetch active story URLs.
 
-3.  **Install Dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+### 📦 Investigation Management
+- **Automated Reporting**: Every command automatically saves results to JSON and TXT reports in `data/<target>/`.
+- **Intelligent Caching**: Lightning-fast repeated queries via TTL-based caching.
+- **Safe Scanning**: Randomized delays and rate-limit management for `fwersemail` and `fwingsemail` commands.
 
-## Usage
+---
 
-Run the main interactive tool:
+## 🚀 Installation
 
-```bash
-python3 detective.py
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/shredzwho/IG-Detective.git
+   cd IG-Detective
+   ```
 
-### Quick Start
+2. **Set up Virtual Environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-1.  **Login**: Enter credentials. Session is saved for future use.
-2.  **Set Target**: 
-    ```bash
-    (ig-detective) target <username>
-    ```
-3.  **Run Commands**:
-    ```bash
-    (ig-detective: username) info
-    (ig-detective: username) followers 50
-    (ig-detective: username) hashtags 20
-    ```
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Available Commands
+---
 
-| Command | Description | Usage |
-| :--- | :--- | :--- |
-| `target` | Set the target username for analysis. | `target <username>` |
-| `info` | Show detailed profile information. | `info` |
-| `followers` | List followers. | `followers [limit]` |
-| `followings` | List users followed by target. | `followings [limit]` |
-| `posts` | Show recent posts summary. | `posts [limit]` |
-| `hashtags` | Analyze hashtags from recent posts. | `hashtags [limit_posts]` |
-| `propic` | Download profile picture. | `propic` |
-| `fwersemail` | Scan followers for email/phone (Slow/Safe Mode). | `fwersemail [limit]` |
-| `clear` | Clear the screen. | `clear` |
-| `logout` | Logout and optionally delete session. | `logout` |
-| `exit` | Exit the tool. | `exit` |
+## 🛠 Usage
 
-### Safety Note on Advanced Scraping
+1. **Launch the Shell**
+   ```bash
+   python3 detective.py
+   ```
 
-The `fwersemail` command allows you to extract business emails and phone numbers from a target's followers. 
-- **Safety First**: This command employs **random delays (10-20s)** and **batch pauses** to prevent your account from being flagged or rate-limited. 
-- **Be Patient**: Scanning 50 followers can take 10-15 minutes. This is intentional.
+2. **Commands**
+   | Command | Description |
+   | :--- | :--- |
+   | `target <user>` | Set the investigation target |
+   | `info` | Show profile details |
+   | `addrs` | Extract location history |
+   | `stats` | Get engagement statistics |
+   | `tagged` | Find tagged users |
+   | `commenters` | Analyze top interactors |
+   | `fwersemail` | Scan followers for contact info (Slow) |
+   | `fwingsemail` | Scan followings for contact info (Slow) |
+   | `stories` | Fetch active story URLs |
 
-## Contributing
+---
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+## 📂 Project Structure
+- `detective.py`: Main interactive shell.
+- `src/python/core/scraper.py`: Advanced scraping logic.
+- `src/python/core/analysis.py`: Statistical and OSINT analysis.
+- `src/python/utils/cache.py`: High-performance caching system.
+- `data/`: Automated investigative reports (git-ignored).
 
-## License
+---
 
-[MIT](https://choosealicense.com/licenses/mit/)
+## 🤝 Contributing
+Feel free to fork this project and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+## 📜 License
+[MIT](file:///Users/shreyask/Desktop/project-0sint/LICENSE)

@@ -20,9 +20,26 @@ class DataAnalyzer:
         return Counter(commenters).most_common(top_n)
 
     @staticmethod
-    def get_average_likes(posts: list) -> float:
-        """Calculate average likes per post."""
+    def get_aggregate_stats(posts: list) -> dict:
+        """Calculate aggregate statistics for a set of posts."""
         if not posts:
-            return 0.0
+            return {}
+        
+        total_posts = len(posts)
         total_likes = sum(post.likes_count for post in posts)
-        return total_likes / len(posts)
+        total_comments = sum(post.comments_count for post in posts)
+        
+        photos = sum(1 for post in posts if not post.is_video)
+        videos = sum(1 for post in posts if post.is_video)
+        
+        return {
+            "total_posts": total_posts,
+            "total_likes": total_likes,
+            "total_comments": total_comments,
+            "avg_likes": total_likes / total_posts if total_posts > 0 else 0,
+            "avg_comments": total_comments / total_posts if total_posts > 0 else 0,
+            "photo_count": photos,
+            "video_count": videos,
+            "photo_ratio": photos / total_posts if total_posts > 0 else 0,
+            "video_ratio": videos / total_posts if total_posts > 0 else 0
+        }

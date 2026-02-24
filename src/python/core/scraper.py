@@ -2,15 +2,28 @@ import instaloader
 import time
 import random
 from src.python.core.models import User, Post
+from geopy.geocoders import Nominatim
+from src.python.utils.cache import CacheManager
 
 class InstagramScraper:
     def __init__(self, loader: instaloader.Instaloader):
         self.L = loader
+        self.cache = CacheManager()
+        self.geolocator = Nominatim(user_agent="ig_detective")
+
+    def _get_profile_instance(self, username: str) -> instaloader.Profile:
+        """Helper to get and cache instaloader.Profile instance."""
+        cache_key = f"profile_obj_{username}"
+        profile = self.cache.get(cache_key)
+        if not profile:
+            profile = instaloader.Profile.from_username(self.L.context, username)
+            self.cache.set(cache_key, profile)
+        return profile
 
     def get_profile(self, username: str) -> User:
         """Fetch profile details for a given username using instaloader."""
         try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
+            profile = self._get_profile_instance(username)
             return User(
                 username=profile.username,
                 full_name=profile.full_name,
@@ -30,8 +43,13 @@ class InstagramScraper:
 
     def get_posts(self, username: str, count: int = 10) -> list[Post]:
         """Fetch n recent posts using instaloader."""
+        cache_key = f"posts_{username}_{count}"
+        cached_posts = self.cache.get(cache_key)
+        if cached_posts:
+            return cached_posts
+
         try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
+            profile = self._get_profile_instance(username)
             posts = []
             for post in profile.get_posts():
                 posts.append(Post(
@@ -47,14 +65,84 @@ class InstagramScraper:
                 ))
                 if len(posts) >= count:
                     break
+            
+            self.cache.set(cache_key, posts)
             return posts
         except Exception as e:
             raise Exception(f"Failed to fetch posts: {e}")
 
+    def get_locations(self, username: str, limit: int = 50) -> list[dict]:
+        """Extract locations from target posts with addresses."""
+        try:
+            profile = self._get_profile_instance(username)
+            locations = []
+            for post in profile.get_posts():
+                if post.location:
+                    loc_data = {
+                        "name": post.location.name,
+                        "lat": post.location.lat,
+                        "lng": post.location.lng,
+                        "timestamp": post.date_utc,
+                        "address": None
+                    }
+                    
+                    # Reverse geocode if coordinates available
+                    if loc_data["lat"] and loc_data["lng"]:
+                        try:
+                            location = self.geolocator.reverse(f"{loc_data['lat']}, {loc_data['lng']}")
+                            if location:
+                                loc_data["address"] = location.address
+                        except Exception:
+                            pass
+                    
+                    locations.append(loc_data)
+                
+                if len(locations) >= limit:
+                    break
+            return locations
+        except Exception as e:
+            raise Exception(f"Failed to fetch locations: {e}")
+
+    def get_tagged_users(self, username: str, post_limit: int = 20) -> list[str]:
+        """Get list of users tagged in target's posts."""
+        try:
+            profile = self._get_profile_instance(username)
+            tagged_users = set()
+            count = 0
+            for post in profile.get_posts():
+                if post.tagged_users:
+                    tagged_users.update(post.tagged_users)
+                count += 1
+                if count >= post_limit:
+                    break
+            return list(tagged_users)
+        except Exception as e:
+            raise Exception(f"Failed to fetch tagged users: {e}")
+
+    def get_stories_urls(self, username: str) -> list[str]:
+        """Fetch URLs for active stories."""
+        try:
+            profile = self._get_profile_instance(username)
+            if not self.L.context.is_logged_in:
+                 raise Exception("Login required to view stories.")
+            
+            story_urls = []
+            for story in self.L.get_stories(userids=[profile.userid]):
+                for item in story.get_items():
+                    story_urls.append(item.video_url if item.is_video else item.url)
+            return story_urls
+        except Exception as e:
+            raise Exception(f"Failed to fetch stories: {e}")
+
     def get_followers(self, username: str, limit: int = 50) -> list[User]:
         """Fetch list of followers."""
+        cache_key = f"followers_{username}_{limit}"
+        cached_followers = self.cache.get(cache_key)
+        if cached_followers:
+            return cached_followers
+
         try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
+            profile = self._get_profile_instance(username)
             followers = []
             for follower in profile.get_followers():
                 followers.append(User(
@@ -66,14 +154,21 @@ class InstagramScraper:
                 ))
                 if len(followers) >= limit:
                     break
+            
+            self.cache.set(cache_key, followers)
             return followers
         except Exception as e:
             raise Exception(f"Failed to fetch followers: {e}")
 
     def get_followings(self, username: str, limit: int = 50) -> list[User]:
         """Fetch list of followings."""
+        cache_key = f"followings_{username}_{limit}"
+        cached_followings = self.cache.get(cache_key)
+        if cached_followings:
+            return cached_followings
+
         try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
+            profile = self._get_profile_instance(username)
             followings = []
             for followee in profile.get_followees():
                 followings.append(User(
@@ -85,15 +180,22 @@ class InstagramScraper:
                 ))
                 if len(followings) >= limit:
                     break
+            
+            self.cache.set(cache_key, followings)
             return followings
         except Exception as e:
             raise Exception(f"Failed to fetch followings: {e}")
 
     def get_user_info(self, username: str) -> dict:
         """Fetch detailed raw user info."""
+        cache_key = f"user_info_{username}"
+        cached_info = self.cache.get(cache_key)
+        if cached_info:
+            return cached_info
+
         try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
-            return {
+            profile = self._get_profile_instance(username)
+            info = {
                 "id": profile.userid,
                 "username": profile.username,
                 "full_name": profile.full_name,
@@ -107,8 +209,11 @@ class InstagramScraper:
                 "business_category": profile.business_category_name,
                 "is_business_account": profile.is_business_account,
             }
+            self.cache.set(cache_key, info)
+            return info
         except Exception as e:
             raise Exception(f"Failed to fetch user info: {e}")
+
 
     def get_user_comments(self, username: str, posts_limit: int = 10) -> list[dict]:
         """Fetch comments from recent posts."""
@@ -155,67 +260,56 @@ class InstagramScraper:
         except Exception as e:
              raise Exception(f"Failed to fetch stories: {e}")
 
-    def scan_followers_for_contact(self, username: str, limit: int = 50, batch_size: int = 50) -> list[dict]:
-        """
-        Scan followers for email and phone numbers.
-        CAUTION: This is a high-intensity operation. 
-        Includes random delays to minimize risk.
-        """
-        print(f"[*] Starting safe scan for {username}'s followers (Limit: {limit})...")
-        print("[!] This process is intentionally slow to avoid detection.")
-        
-        try:
-            profile = instaloader.Profile.from_username(self.L.context, username)
-            contacts = []
-            count = 0
-            
-            followers_iter = profile.get_followers()
-            
-            for follower in followers_iter:
-                if count >= limit:
-                    break
-                
-                try:
-                    # We need to fetch full profile to get business emails
-                    # This triggers a request per user
-                    full_profile = instaloader.Profile.from_username(self.L.context, follower.username)
-                    
-                    email = full_profile.business_email
-                    phone = full_profile.business_phone_number
-                    
-                    if email or phone:
-                        contact_info = {
-                            "username": full_profile.username,
-                            "full_name": full_profile.full_name,
-                            "email": email,
-                            "phone": phone
-                        }
-                        contacts.append(contact_info)
-                        yield contact_info # Yield immediately to save progress
-                    
-                    count += 1
-                    
-                    # Random delay between requests (safety)
-                    sleep_time = random.uniform(8, 15)
-                    time.sleep(sleep_time)
-                    
-                    # Larger delay after a batch
-                    if count % batch_size == 0:
-                        long_sleep = random.uniform(30, 60)
-                        print(f"[!] Batch {count} reached. Sleeping for {long_sleep:.2f}s...")
-                        time.sleep(long_sleep)
-                        
-                except instaloader.ConnectionException as e:
-                    print(f"[!] Connection error (likely rate limited): {e}")
-                    print("[!] Stopping scan for safety.")
-                    break
-                except instaloader.QueryReturnedNotFoundException:
-                    continue
-                except Exception as e:
-                    print(f"[!] Error processing {follower.username}: {e}")
-                    continue
-                    
-            return contacts
+    def scan_followers_for_contact(self, username: str, limit: int = 50, batch_size: int = 50):
+        """Scan followers for email and phone numbers."""
+        profile = instaloader.Profile.from_username(self.L.context, username)
+        return self._scan_iterator(profile.get_followers(), limit, batch_size)
 
-        except Exception as e:
-            raise Exception(f"Failed to scan followers: {e}")
+    def scan_followings_for_contact(self, username: str, limit: int = 50, batch_size: int = 50):
+        """Scan followings for email and phone numbers."""
+        profile = instaloader.Profile.from_username(self.L.context, username)
+        return self._scan_iterator(profile.get_followees(), limit, batch_size)
+
+    def _scan_iterator(self, profile_iter, limit: int, batch_size: int):
+        """Helper to scan any profile iterator for contact info."""
+        count = 0
+        for profile_item in profile_iter:
+            if count >= limit:
+                break
+            
+            try:
+                # We need to fetch full profile to get business emails
+                full_profile = instaloader.Profile.from_username(self.L.context, profile_item.username)
+                
+                email = full_profile.business_email
+                phone = full_profile.business_phone_number
+                
+                if email or phone:
+                    contact_info = {
+                        "username": full_profile.username,
+                        "full_name": full_profile.full_name,
+                        "email": email,
+                        "phone": phone
+                    }
+                    yield contact_info
+                
+                count += 1
+                
+                # Random delay between requests (safety)
+                sleep_time = random.uniform(8, 15)
+                time.sleep(sleep_time)
+                
+                # Larger delay after a batch
+                if count % batch_size == 0:
+                    long_sleep = random.uniform(30, 60)
+                    print(f"[!] Batch {count} reached. Sleeping for {long_sleep:.2f}s...")
+                    time.sleep(long_sleep)
+                    
+            except instaloader.ConnectionException as e:
+                print(f"[!] Connection error (likely rate limited): {e}")
+                break
+            except instaloader.QueryReturnedNotFoundException:
+                continue
+            except Exception as e:
+                print(f"[!] Error processing {profile_item.username}: {e}")
+                continue

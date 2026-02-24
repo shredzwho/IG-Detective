@@ -1,6 +1,9 @@
-requests
-numpy
-pytest
-click
-requests-mock
+# Core dependencies
 instaloader
+rich
+geopy
+prettytable
+
+# Testing
+pytest
+requests-mock

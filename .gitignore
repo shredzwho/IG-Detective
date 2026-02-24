@@ -1,2 +1,30 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Instaloader / Sensitive Data
+session-*
+cookies.txt
+credentials.ini
+
+# Project Specific Data/Reference
+data/
+Osintgram_reference/
+*.csv
+*_contact.csv
+
+# OS metadata
+.DS_Store
+
+# IDE Settings
+.vscode/
+.idea/

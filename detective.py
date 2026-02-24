@@ -5,22 +5,28 @@ import os
 import sys
 from src.python.core.scraper import InstagramScraper
 from src.python.core.models import User, Post
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
+from rich import print as rprint
+
+console = Console()
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def print_banner():
-    print(r"""
+    banner = r"""
     ___ ____      ____       _            _   _
    |_ _/ ___|    |  _ \  ___| |_ ___  ___| |_(_)_   _____
     | | |  _ ____| | | |/ _ \ __/ _ \/ __| __| \ \ / / _ \
     | | |_| |____| |_| |  __/ ||  __/ (__| |_| |\ V /  __/
    |___\____|    |____/ \___|\__\___|\___|\__|_| \_/ \___|
-    """)
-    print("    IG-Detective - Open Source Intelligence Tool for Instagram")
-    print("    ----------------------------------------------------------\n")
-    print("Disclaimer: This tool is for educational purposes only. Please use it responsibly and respect the privacy of others.\n")
-    print("Created by @shredzwho\n")
+    """
+    console.print(Panel(banner, subtitle="Open Source Intelligence Tool for Instagram", title="IG-Detective", border_style="bold cyan"))
+    console.print("[bold yellow]Disclaimer:[/bold yellow] This tool is for educational purposes only. Please use it responsibly.\n")
+    console.print("Created by [bold cyan]@shredzwho[/bold cyan]\n")
 
 
 def set_secure_permissions(filepath):
@@ -113,6 +119,36 @@ class InteractiveShell(cmd.Cmd):
         self.scraper = InstagramScraper(loader)
         self.target = None
         self.target_data = None 
+        self.report_dir = "data"
+
+    def _save_report(self, category: str, data: Any, text_content: str = None):
+        """Save command results to data/<target>/ directory."""
+        if not self.target:
+            return
+            
+        target_dir = os.path.join(self.report_dir, self.target)
+        os.makedirs(target_dir, exist_ok=True)
+        
+        # Save JSON
+        import json
+        json_path = os.path.join(target_dir, f"{category}.json")
+        try:
+            # Handle non-serializable objects (like User/Post dataclasses)
+            serializable_data = data
+            if isinstance(data, list):
+                from dataclasses import asdict, is_dataclass
+                serializable_data = [asdict(item) if is_dataclass(item) else item for item in data]
+            
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(serializable_data, f, indent=4, default=str)
+        except Exception as e:
+            console.print(f"[dim red]Error saving JSON report: {e}[/dim red]")
+
+        # Save TXT (optional formatted version)
+        if text_content:
+            txt_path = os.path.join(target_dir, f"{category}.txt")
+            with open(txt_path, 'w', encoding='utf-8') as f:
+                f.write(text_content)
 
     def do_target(self, arg):
         """Set target username: target [username]"""
@@ -135,105 +171,242 @@ class InteractiveShell(cmd.Cmd):
     def do_info(self, arg):
         """Show current target info."""
         if not self.target:
-            print("No target set. Use 'target [username]' first.")
+            console.print("[bold red]No target set.[/bold red] Use 'target [username]' first.")
             return
 
-        print("\n" + "="*40)
-        print(f"Target: {self.target_data['username']}")
-        print("-" * 40)
-        print(f"ID: {self.target_data['id']}")
-        print(f"Name: {self.target_data['full_name']}")
-        print(f"Bio: {self.target_data['biography']}")
-        print(f"Followers: {self.target_data['followers']}")
-        print(f"Following: {self.target_data['followees']}")
-        print(f"Private: {self.target_data['is_private']}")
-        print(f"Verified: {self.target_data['is_verified']}")
-        print(f"Business: {self.target_data['is_business_account']} ({self.target_data['business_category']})")
-        print(f"Profile Pic: {self.target_data['profile_pic_url']}")
-        print("="*40 + "\n")
+        table = Table(title=f"Target Profile: {self.target_data['username']}", show_header=False, border_style="dim")
+        table.add_column("Key", style="cyan")
+        table.add_column("Value", style="white")
+        
+        table.add_row("ID", str(self.target_data['id']))
+        table.add_row("Name", self.target_data['full_name'])
+        table.add_row("Bio", self.target_data['biography'])
+        table.add_row("Followers", str(self.target_data['followers']))
+        table.add_row("Following", str(self.target_data['followees']))
+        table.add_row("Private", "[green]Yes[/green]" if self.target_data['is_private'] else "[red]No[/red]")
+        table.add_row("Verified", "[blue]Yes[/blue]" if self.target_data['is_verified'] else "[red]No[/red]")
+        table.add_row("Business", f"{self.target_data['is_business_account']} ({self.target_data['business_category']})")
+        
+        console.print(table)
+        self._save_report("info", self.target_data)
 
     def do_followers(self, arg):
         """Get followers list: followers [limit]"""
         if not self.target:
-            print("No target set.")
+            console.print("[bold red]No target set.[/bold red]")
             return
         
         limit = 50
         if arg.isdigit():
             limit = int(arg)
             
-        print(f"Fetching {limit} followers...")
-        try:
-            followers = self.scraper.get_followers(self.target, limit)
-            print(f"\nFound {len(followers)} followers:")
-            for idx, user in enumerate(followers, 1):
-                print(f"{idx}. {user.username} - {user.full_name}")
-        except Exception as e:
-            print(f"Error: {e}")
+        with console.status(f"[bold green]Fetching {limit} followers...") as status:
+            try:
+                followers = self.scraper.get_followers(self.target, limit)
+                table = Table(title=f"Followers of {self.target}")
+                table.add_column("No.", style="dim")
+                table.add_column("Username", style="cyan")
+                table.add_column("Full Name", style="white")
+                
+                for idx, user in enumerate(followers, 1):
+                    table.add_row(str(idx), user.username, user.full_name)
+                
+                console.print(table)
+                self._save_report("followers", followers)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
 
     def do_followings(self, arg):
         """Get followings list: followings [limit]"""
         if not self.target:
-            print("No target set.")
+            console.print("[bold red]No target set.[/bold red]")
             return
         
         limit = 50
         if arg.isdigit():
             limit = int(arg)
             
-        print(f"Fetching {limit} followings...")
-        try:
-            followings = self.scraper.get_followings(self.target, limit)
-            print(f"\nFound {len(followings)} followings:")
-            for idx, user in enumerate(followings, 1):
-                print(f"{idx}. {user.username} - {user.full_name}")
-        except Exception as e:
-            print(f"Error: {e}")
+        with console.status(f"[bold green]Fetching {limit} followings...") as status:
+            try:
+                followings = self.scraper.get_followings(self.target, limit)
+                table = Table(title=f"Followings of {self.target}")
+                table.add_column("No.", style="dim")
+                table.add_column("Username", style="cyan")
+                table.add_column("Full Name", style="white")
+                
+                for idx, user in enumerate(followings, 1):
+                    table.add_row(str(idx), user.username, user.full_name)
+                
+                console.print(table)
+                self._save_report("followings", followings)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
 
     def do_posts(self, arg):
         """Get recent posts: posts [limit]"""
         if not self.target:
-            print("No target set.")
+            console.print("[bold red]No target set.[/bold red]")
             return
             
         limit = 10
         if arg.isdigit():
             limit = int(arg)
             
-        print(f"Fetching {limit} posts...")
-        try:
-            posts = self.scraper.get_posts(self.target, limit)
-            for post in posts:
-                print("-" * 40)
-                print(f"ID: {post.id}")
-                print(f"Date: {post.timestamp}")
-                print(f"Likes: {post.likes_count} | Comments: {post.comments_count}")
-                if post.is_video:
-                    print(f"Views: {post.video_view_count}")
-                print(f"Caption: {post.caption[:100]}..." if post.caption and len(post.caption) > 100 else f"Caption: {post.caption}")
-        except Exception as e:
-             print(f"Error: {e}")
+        with console.status(f"[bold green]Fetching {limit} posts...") as status:
+            try:
+                posts = self.scraper.get_posts(self.target, limit)
+                for post in posts:
+                    panel = Panel(
+                        f"[cyan]ID:[/cyan] {post.id}\n"
+                        f"[cyan]Date:[/cyan] {post.timestamp}\n"
+                        f"[cyan]Stats:[/cyan] {post.likes_count} Likes | {post.comments_count} Comments"
+                        + (f" | {post.video_view_count} Views" if post.is_video else "") + "\n"
+                        f"[cyan]Caption:[/cyan] {post.caption[:200]}..." if post.caption and len(post.caption) > 200 else f"[cyan]Caption:[/cyan] {post.caption}",
+                        title=f"Post {post.shortcode}",
+                        expand=False
+                    )
+                    console.print(panel)
+                
+                self._save_report("posts", posts)
+            except Exception as e:
+                 console.print(f"[bold red]Error:[/bold red] {e}")
 
     def do_hashtags(self, arg):
         """Analyze hashtags from recent posts: hashtags [limit_posts]"""
         if not self.target:
-             print("No target set.")
+             console.print("[bold red]No target set.[/bold red]")
              return
         
         limit = 50
         if arg.isdigit():
             limit = int(arg)
             
-        print(f"Analyzing hashtags from last {limit} posts...")
-        try:
-            posts = self.scraper.get_posts(self.target, limit)
-            top_hashtags = DataAnalyzer.get_most_used_hashtags(posts)
-            
-            print("\nTop Hashtags Used:")
-            for tag, count in top_hashtags:
-                print(f"#{tag}: {count}")
-        except Exception as e:
-            print(f"Error: {e}")
+        with console.status(f"[bold green]Analyzing hashtags from last {limit} posts...") as status:
+            try:
+                posts = self.scraper.get_posts(self.target, limit)
+                top_hashtags = DataAnalyzer.get_most_used_hashtags(posts)
+                
+                table = Table(title=f"Top Hashtags: {self.target}")
+                table.add_column("Hashtag", style="cyan")
+                table.add_column("Count", style="white")
+                
+                for tag, count in top_hashtags:
+                    table.add_row(f"#{tag}", str(count))
+                
+                console.print(table)
+                self._save_report("hashtags", dict(top_hashtags))
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_addrs(self, arg):
+        """Search for locations used in target's posts: addrs [limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+
+        with console.status(f"[bold green]Searching for locations in {limit} posts...") as status:
+            try:
+                locations = self.scraper.get_locations(self.target, limit)
+                if not locations:
+                    console.print("[yellow]No locations found.[/yellow]")
+                    return
+
+                table = Table(title=f"Location History: {self.target}")
+                table.add_column("Date", style="dim")
+                table.add_column("Location Name", style="cyan")
+                table.add_column("Address", style="white")
+
+                for loc in locations:
+                    table.add_row(
+                        loc["timestamp"].strftime("%Y-%m-%d %H:%M"),
+                        loc["name"] or "Unknown",
+                        loc["address"] or "No address found"
+                    )
+                
+                console.print(table)
+                self._save_report("locations", locations)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_tagged(self, arg):
+        """Identify users tagged in target's posts: tagged [limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+
+        limit = 20
+        if arg.isdigit():
+            limit = int(arg)
+
+        with console.status(f"[bold green]Checking tagged users in {limit} posts...") as status:
+            try:
+                tagged = self.scraper.get_tagged_users(self.target, limit)
+                if not tagged:
+                    console.print("[yellow]No tagged users found.[/yellow]")
+                    return
+
+                console.print(f"\n[bold cyan]Users tagged by {self.target}:[/bold cyan]")
+                for user in sorted(tagged):
+                    console.print(f"- {user}")
+                self._save_report("tagged_users", sorted(tagged))
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_stats(self, arg):
+        """Get aggregate statistics for target's account: stats [limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+
+        with console.status(f"[bold green]Calculating statistics for {limit} posts...") as status:
+            try:
+                posts = self.scraper.get_posts(self.target, limit)
+                stats = DataAnalyzer.get_aggregate_stats(posts)
+
+                table = Table(title=f"Account Statistics: {self.target} (Last {len(posts)} posts)", show_header=False)
+                table.add_column("Metric", style="cyan")
+                table.add_column("Value", style="white")
+
+                table.add_row("Total Likes", str(stats["total_likes"]))
+                table.add_row("Total Comments", str(stats["total_comments"]))
+                table.add_row("Avg Likes/Post", f"{stats['avg_likes']:.2f}")
+                table.add_row("Avg Comments/Post", f"{stats['avg_comments']:.2f}")
+                table.add_row("Photos", str(stats["photo_count"]))
+                table.add_row("Videos", str(stats["video_count"]))
+                table.add_row("Content Mix", f"{stats['photo_ratio']*100:.0f}% Photo / {stats['video_ratio']*100:.0f}% Video")
+
+                console.print(table)
+                self._save_report("stats", stats)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_stories(self, arg):
+        """Fetch active story URLs: stories"""
+        if not self.target:
+             console.print("[bold red]No target set.[/bold red]")
+             return
+        
+        with console.status("[bold green]Fetching active stories...") as status:
+            try:
+                urls = self.scraper.get_stories_urls(self.target)
+                if not urls:
+                    console.print("[yellow]No active stories found.[/yellow]")
+                    return
+
+                console.print(f"\n[bold cyan]Active Story URLs for {self.target}:[/bold cyan]")
+                for idx, url in enumerate(urls, 1):
+                    console.print(f"{idx}. {url}")
+                self._save_report("stories", urls)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
 
     def do_propic(self, arg):
         """Download profile picture."""
@@ -258,9 +431,14 @@ class InteractiveShell(cmd.Cmd):
         print("Exiting...")
         return True
 
-    def do_quit(self, arg):
-        """Exit the shell."""
-        return self.do_exit(arg)
+    def do_logout(self, arg):
+        """Logout and optionally delete session."""
+        username = self.L.context.username
+        print(f"Logging out {username}...")
+        cleanup_session(username)
+        self.scraper.cache.clear()
+        print("Logged out and cache cleared.")
+        return True
 
     def do_fwersemail(self, arg):
         """
@@ -277,13 +455,12 @@ class InteractiveShell(cmd.Cmd):
 
         csv_filename = f"{self.target}_followers_contact.csv"
         
-        print(f"\n[*] Scanning {limit} followers of {self.target} for contact info...")
-        print(f"[*] Results will be saved to {csv_filename}")
-        print("[!] Press Ctrl+C to stop scanning safely.\n")
+        console.print(f"\n[*] [bold green]Scanning {limit} followers of {self.target} for contact info...[/bold green]")
+        console.print(f"[*] Results will be saved to [cyan]{csv_filename}[/cyan]")
+        console.print("[yellow][!] Press Ctrl+C to stop scanning safely.[/yellow]\n")
 
-        found_count = 0
+        found_contacts = []
         try:
-            # Create/Open CSV and write header
             mode = 'w'
             if os.path.exists(csv_filename):
                 mode = 'a'
@@ -294,29 +471,91 @@ class InteractiveShell(cmd.Cmd):
                 if mode == 'w':
                     writer.writeheader()
                 
-                # Iterate generator
                 for contact in self.scraper.scan_followers_for_contact(self.target, limit):
                     writer.writerow(contact)
-                    f.flush() # Ensure it's written immediately
-                    print(f"[+] Found: {contact['username']} | {contact['email']} | {contact['phone']}")
-                    found_count += 1
+                    f.flush()
+                    console.print(f"[bold green]+[/bold green] Found: [cyan]{contact['username']}[/cyan] | {contact['email']} | {contact['phone']}")
+                    found_contacts.append(contact)
                     
         except KeyboardInterrupt:
-            print("\n[!] Scan stopped by user.")
+            console.print("\n[bold red][!] Scan stopped by user.[/bold red]")
         except Exception as e:
-            print(f"\n[!] Error: {e}")
+            console.print(f"\n[bold red][!] Error: {e}[/bold red]")
         finally:
-            print(f"\n[*] Scan complete. Found {found_count} contacts.")
-            print(f"[*] Saved to {csv_filename}")
+            console.print(f"\n[*] Scan complete. Found [bold green]{len(found_contacts)}[/bold green] contacts.")
+            self._save_report("followers_contacts", found_contacts)
 
     def do_fwingsemail(self, arg):
         """
         Scan followings for emails/phones: fwingsemail [limit]
         WARNING: Slow operation to ensure safety.
         """
-        # Logic is identical to fwersemail but using get_followees (not implemented in shared scraper yet efficiently, 
-        # so for now we will reuse similar logic or just warn it's prospective)
-        print("Feature coming soon! (Use fwersemail for now)")
+        if not self.target:
+            print("No target set.")
+            return
+
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+
+        csv_filename = f"{self.target}_followings_contact.csv"
+        
+        console.print(f"\n[*] [bold green]Scanning {limit} followings of {self.target} for contact info...[/bold green]")
+        console.print(f"[*] Results will be saved to [cyan]{csv_filename}[/cyan]")
+        console.print("[yellow][!] Press Ctrl+C to stop scanning safely.[/yellow]\n")
+
+        found_contacts = []
+        try:
+            mode = 'w'
+            if os.path.exists(csv_filename):
+                mode = 'a'
+            
+            with open(csv_filename, mode, newline='', encoding='utf-8') as f:
+                import csv
+                writer = csv.DictWriter(f, fieldnames=["username", "full_name", "email", "phone"])
+                if mode == 'w':
+                    writer.writeheader()
+                
+                for contact in self.scraper.scan_followings_for_contact(self.target, limit):
+                    writer.writerow(contact)
+                    f.flush()
+                    console.print(f"[bold green]+[/bold green] Found: [cyan]{contact['username']}[/cyan] | {contact['email']} | {contact['phone']}")
+                    found_contacts.append(contact)
+                    
+        except KeyboardInterrupt:
+            console.print("\n[bold red][!] Scan stopped by user.[/bold red]")
+        except Exception as e:
+            console.print(f"\n[bold red][!] Error: {e}[/bold red]")
+        finally:
+            console.print(f"\n[*] Scan complete. Found [bold green]{len(found_contacts)}[/bold green] contacts.")
+            self._save_report("followings_contacts", found_contacts)
+
+    def do_commenters(self, arg):
+        """Analyze top commenters from recent posts: commenters [limit_posts]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+
+        limit = 10
+        if arg.isdigit():
+            limit = int(arg)
+
+        with console.status(f"[bold green]Analyzing comments from last {limit} posts...") as status:
+            try:
+                comments = self.scraper.get_user_comments(self.target, limit)
+                top_commenters = DataAnalyzer.get_top_commenters(comments)
+
+                table = Table(title=f"Top Commenters: {self.target}")
+                table.add_column("Username", style="cyan")
+                table.add_column("Comment Count", style="white")
+
+                for user, count in top_commenters:
+                    table.add_row(user, str(count))
+
+                console.print(table)
+                self._save_report("commenters", dict(top_commenters))
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
 
 
 if __name__ == "__main__":
