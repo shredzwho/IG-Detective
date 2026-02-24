@@ -15,23 +15,25 @@
 
 ## ⚡ Features
 
+### 🛡️ Evasion & Stealth (Advanced)
+- **TLS Fingerprint Spoofing**: Uses `curl_cffi` to impersonate a modern Chrome browser at the network level, bypassing CDN rate-limiting.
+- **Poisson Jitter**: Human-like randomized delays between requests to mimic natural user behavior.
+
 ### 🔍 Core Reconnaissance
 - **User Info**: Comprehensive profile details (ID, Bio, Followers, Business status).
 - **Followers/Following**: List and export target's social network.
 - **Post Analysis**: Detailed breakdown of recent content, likes, and comments.
 
-### 📍 Advanced OSINT (New!)
-- **Location History (`addrs`)**: Extract GPS coordinates from posts and reverse-geocode them to readable addresses.
-- **Interaction Mapping**:
-    - `tagged`: Identify users tagged in the target's posts.
-    - `commenters`: Rank followers by engagement level and frequency.
-- **Account Statistics (`stats`)**: Detailed aggregate analysis of engagement and media type distribution.
+### 📍 Advanced OSINT
+- **Interactive Geospatial Mapping**: Extracts GPS coordinates from posts and generates a Folium `interactive_map.html` with readable addresses and clickable pins.
+- **Social Network Analysis (`sna`)**: Maps interactions to identify the "Inner Circle"—the top 10 users most highly connected to the target.
+- **Temporal Activity Profiling (`temporal`)**: Uses DBSCAN clustering to identify the target's "sleep gap" and predict their primary Time Zone.
 - **Story Extraction (`stories`)**: Fetch active story URLs.
 
 ### 📦 Investigation Management
 - **Automated Reporting**: Every command automatically saves results to JSON and TXT reports in `data/<target>/`.
+- **Autonomous Batch Mode**: Process multiple targets sequentially from a text file.
 - **Intelligent Caching**: Lightning-fast repeated queries via TTL-based caching.
-- **Safe Scanning**: Randomized delays and rate-limit management for `fwersemail` and `fwingsemail` commands.
 
 ---
 
@@ -63,13 +65,16 @@
    python3 detective.py
    ```
 
-2. **Commands**
+2. **Core Commands**
    | Command | Description |
    | :--- | :--- |
    | `target <user>` | Set the investigation target |
    | `info` | Show profile details |
-   | `addrs` | Extract location history |
    | `stats` | Get engagement statistics |
+   | `addrs` | Extract location history & generate HTML map |
+   | `sna` | Perform Social Network Analysis (Inner Circle) |
+   | `temporal` | Analyze posting times & predict Time Zone |
+   | `batch <file>` | Autonomous processing of multiple handles |
    | `tagged` | Find tagged users |
    | `commenters` | Analyze top interactors |
    | `fwersemail` | Scan followers for contact info (Slow) |
@@ -80,8 +85,8 @@
 
 ## 📂 Project Structure
 - `detective.py`: Main interactive shell.
-- `src/python/core/scraper.py`: Advanced scraping logic.
-- `src/python/core/analysis.py`: Statistical and OSINT analysis.
+- `src/python/core/scraper.py`: Advanced scraping logic & evasion.
+- `src/python/core/analysis.py`: Deep OSINT analysis (SNA, Temporal).
 - `src/python/utils/cache.py`: High-performance caching system.
 - `data/`: Automated investigative reports (git-ignored).
 

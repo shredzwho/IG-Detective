@@ -4,6 +4,18 @@ rich
 geopy
 prettytable
 
+# Advanced Evasion & Networking
+curl_cffi
+numpy
+
+# Deep Investigative Analysis
+networkx
+pandas
+scikit-learn
+
+# Visual Output
+folium
+
 # Testing
 pytest
 requests-mock

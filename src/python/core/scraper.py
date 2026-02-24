@@ -1,15 +1,27 @@
 import instaloader
 import time
 import random
+import numpy as np
+from curl_cffi import requests as cffi_requests
 from src.python.core.models import User, Post
 from geopy.geocoders import Nominatim
 from src.python.utils.cache import CacheManager
+
+def poisson_jitter(mean_delay: float) -> float:
+    """Generate human-like delay using Poisson distribution."""
+    return np.random.poisson(mean_delay)
 
 class InstagramScraper:
     def __init__(self, loader: instaloader.Instaloader):
         self.L = loader
         self.cache = CacheManager()
         self.geolocator = Nominatim(user_agent="ig_detective")
+        
+        # Task 1: TLS Fingerprint Spoofing
+        # Impersonate a modern browser to bypass CDN rate-limiting
+        self.session = cffi_requests.Session(impersonate="chrome")
+        # Inject the spoofed session into instaloader
+        self.L.context._session = self.session
 
     def _get_profile_instance(self, username: str) -> instaloader.Profile:
         """Helper to get and cache instaloader.Profile instance."""
@@ -295,15 +307,15 @@ class InstagramScraper:
                 
                 count += 1
                 
-                # Random delay between requests (safety)
-                sleep_time = random.uniform(8, 15)
-                time.sleep(sleep_time)
+                # Task 1: Poisson Jitter (Human-like delay)
+                sleep_time = poisson_jitter(10.0)
+                time.sleep(max(5, sleep_time)) # Ensure at least 5s to be safe
                 
-                # Larger delay after a batch
+                # Larger delay after a batch using Poisson distribution
                 if count % batch_size == 0:
-                    long_sleep = random.uniform(30, 60)
-                    print(f"[!] Batch {count} reached. Sleeping for {long_sleep:.2f}s...")
-                    time.sleep(long_sleep)
+                    long_sleep = poisson_jitter(45.0)
+                    print(f"[!] Batch {count} reached. High-latency jitter sleep for {long_sleep}s...")
+                    time.sleep(max(20, long_sleep))
                     
             except instaloader.ConnectionException as e:
                 print(f"[!] Connection error (likely rate limited): {e}")

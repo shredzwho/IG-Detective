@@ -10,6 +10,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn
 from rich import print as rprint
+import folium
+from typing import Any
 
 console = Console()
 
@@ -329,6 +331,22 @@ class InteractiveShell(cmd.Cmd):
                 
                 console.print(table)
                 self._save_report("locations", locations)
+                
+                # Task 3: Interactive Mapping with Folium
+                target_dir = os.path.join(self.report_dir, self.target)
+                m = folium.Map(location=[locations[0]["lat"], locations[0]["lng"]], zoom_start=12)
+                for loc in locations:
+                    if loc["lat"] and loc["lng"]:
+                        folium.Marker(
+                            [loc["lat"], loc["lng"]], 
+                            popup=f"{loc['name']}\n{loc['address']}",
+                            tooltip=loc["timestamp"].strftime("%Y-%m-%d %H:%M")
+                        ).add_to(m)
+                
+                map_path = os.path.join(target_dir, "interactive_map.html")
+                m.save(map_path)
+                console.print(f"[bold green][*] Interactive map generated:[/bold green] [cyan]{map_path}[/cyan]")
+                
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
 
@@ -556,6 +574,86 @@ class InteractiveShell(cmd.Cmd):
                 self._save_report("commenters", dict(top_commenters))
             except Exception as e:
                 console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_sna(self, arg):
+        """Social Network Analysis (Inner Circle): sna [post_limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+        
+        limit = 20
+        if arg.isdigit():
+            limit = int(arg)
+            
+        with console.status(f"[bold green]Performing SNA on {self.target} interactions...") as status:
+            try:
+                comments = self.scraper.get_user_comments(self.target, limit)
+                tagged = self.scraper.get_tagged_users(self.target, limit)
+                inner_circle = DataAnalyzer.perform_sna(self.target, comments, tagged)
+                
+                table = Table(title=f"The Inner Circle: {self.target} (Engagement Rank)")
+                table.add_column("Rank", style="dim")
+                table.add_column("User", style="cyan")
+                table.add_column("Influence Score", style="white")
+                
+                for idx, (user, score) in enumerate(inner_circle, 1):
+                    table.add_row(str(idx), user, f"{score:.4f}")
+                    
+                console.print(table)
+                self._save_report("sna_inner_circle", inner_circle)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_temporal(self, arg):
+        """Temporal Behavior & Timezone Prediction: temporal [limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+            
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+            
+        with console.status(f"[bold green]Analyzing temporal patterns for {self.target}...") as status:
+            try:
+                posts = self.scraper.get_posts(self.target, limit)
+                analysis = DataAnalyzer.analyze_temporal_behavior(posts)
+                
+                table = Table(title=f"Temporal Analysis: {self.target}", show_header=False)
+                table.add_column("Metric", style="cyan")
+                table.add_column("Value", style="white")
+                
+                table.add_row("Sleep Gap Start", f"{analysis['sleep_start_hour']}:00 (Local Activity Trough)")
+                table.add_row("Gap Duration", f"{analysis['sleep_gap_duration']} hours")
+                table.add_row("Predicted Timezone", f"[bold green]{analysis['predicted_timezone']}[/bold green]")
+                
+                console.print(table)
+                self._save_report("temporal_analysis", analysis)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_batch(self, arg):
+        """Autonomous batch processing from file: batch <targets.txt>"""
+        if not arg or not os.path.exists(arg):
+            console.print(f"[bold red]Usage: batch <filename.txt>[/bold red]")
+            return
+            
+        with open(arg, 'r') as f:
+            targets = [line.strip() for line in f if line.strip()]
+            
+        console.print(f"[bold cyan]Starting batch process for {len(targets)} targets...[/bold cyan]")
+        for user in targets:
+            console.print(f"\n[bold yellow]>>> Processing: {user}[/bold yellow]")
+            self.do_target(user)
+            if self.target:
+                self.do_info("")
+                self.do_stats("50")
+                self.do_addrs("20")
+                self.do_sna("20")
+                self.do_temporal("50")
+            console.print(f"[dim green]<<< Finished: {user}[/dim green]")
+        
+        console.print(f"\n[bold green][*] Batch process complete![/bold green]")
 
 
 if __name__ == "__main__":
