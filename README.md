@@ -30,6 +30,12 @@
 - **Temporal Activity Profiling (`temporal`)**: Uses DBSCAN clustering to identify the target's "sleep gap" and predict their primary Time Zone.
 - **Story Extraction (`stories`)**: Fetch active story URLs.
 
+### 🔬 Research-Driven Forensic Modules (Bleeding-Edge)
+- **Account Recovery Enumeration (`recovery`)**: Trigger password reset flow to reveal masked contact tips for administrative email verification.
+- **Co-Visitation Analysis (`intersect`)**: Identify physical physical meeting points by cross-referencing GPS/Time intersections between two targets.
+- **Stylometry (`stylometry`)**: Generate a digital "Linguistic Signature" to link multiple accounts based on bigram and emoji distribution.
+- **Engagement Audit (`audit`)**: Statistical detection of inauthentic bot activity via temporal jitter variance.
+
 ### 📦 Investigation Management
 - **Automated Reporting**: Every command automatically saves results to JSON and TXT reports in `data/<target>/`.
 - **Autonomous Batch Mode**: Process multiple targets sequentially from a text file.
@@ -80,6 +86,16 @@
    | `fwersemail` | Scan followers for contact info (Slow) |
    | `fwingsemail` | Scan followings for contact info (Slow) |
    | `stories` | Fetch active story URLs |
+   | `recovery` | Account Recovery Enumeration (Forgot PWD Scan) |
+   | `intersect <u2>`| Find GPS/Time intersections with second target |
+   | `stylometry` | Generate Linguistic Signature (Bigram Analysis) |
+   | `audit` | Botnet & Inauthentic Engagement Audit |
+
+---
+
+## 📑 Detailed Documentation
+For a deep dive into the system architecture, forensic methodologies, and evasion logic, see:
+👉 **[DOCUMENTATION.md](DOCUMENTATION.md)**
 
 ---
 
