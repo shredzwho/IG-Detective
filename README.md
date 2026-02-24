@@ -91,4 +91,4 @@
 Feel free to fork this project and submit pull requests. For major changes, please open an issue first to discuss what you would like to change.
 
 ## 📜 License
-[MIT](file:///Users/shreyask/Desktop/project-0sint/LICENSE)
+[MIT]
