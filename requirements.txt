@@ -1,21 +1,21 @@
 # Core dependencies
-instaloader
-rich
-geopy
-prettytable
+instaloader>=4.15
+rich>=14.3
+geopy>=2.4.1
+prettytable>=3.17.0
 
 # Advanced Evasion & Networking
-curl_cffi
-numpy
+curl_cffi>=0.14.0
+numpy>=2.4.2
 
 # Deep Investigative Analysis
-networkx
-pandas
-scikit-learn
+networkx>=3.6.1
+pandas>=3.0.1
+scikit-learn>=1.6.0
 
 # Visual Output
-folium
+folium>=0.20.0
 
 # Testing
-pytest
-requests-mock
+pytest>=9.0.2
+requests-mock>=1.12.1
