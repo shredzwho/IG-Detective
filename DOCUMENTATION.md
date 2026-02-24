@@ -48,9 +48,13 @@ graph TD
     B --> D[Instaloader Core]
     B --> E[curl_cffi / TLS Spoofing]
     B --> F[CacheManager / cache.py]
+    B --> K[Recovery Flow / Account Recon]
     C --> G[NetworkX / SNA]
     C --> H[scikit-learn / Clustering]
+    C --> L[NLTK / Stylometry]
+    C --> M[Pandas / Statistical Audit]
     A --> I[Folium / Mapping]
+    A --> O[Intersection Engine]
     A --> J[Reporting Engine]
 ```
 
@@ -67,13 +71,16 @@ The primary interface. It manages:
 ### 3.2. Advanced Scraper (`scraper.py`)
 The "Networking Layer". It handles all communication with Instagram's private API.
 - **Evasion Logic**: Injects spoofed TLS fingerprints and randomized jitter.
+- **Recovery Recon**: Initiates password reset flows to extract masked contact pointers.
 - **Data Hydration**: Converts raw API responses into clean Python dataclasses.
 - **Contact Extraction**: Dedicated logic for scanning business accounts for emails and phone numbers.
 
 ### 3.3. Forensic Analysis (`analysis.py`)
 The "Brain" of the tool. It performs heavy computational tasks on gathered data.
-- **SNA**: Calculates relationship weights between users.
-- **Clustering**: Identifies patterns in high-dimensional temporal data.
+- **SNA**: Calculates relationship weights and centrality between users.
+- **Clustering**: Identifies patterns in high-dimensional temporal data (Sleep Gaps).
+- **Stylometry**: Generates linguistic signatures via NLTK bigram and emoji analysis.
+- **Engagement Audit**: Statistically detects inauthentic bot behavior via temporal jitter variance.
 
 ### 3.4. Cache Management (`cache.py`)
 A TTL-based object caching system that prevents redundant network requests, speeding up investigations and reducing the risk of rate-limiting.
