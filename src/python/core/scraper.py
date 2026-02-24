@@ -325,3 +325,35 @@ class InstagramScraper:
             except Exception as e:
                 print(f"[!] Error processing {profile_item.username}: {e}")
                 continue
+
+    def get_recovery_info(self, username: str) -> dict:
+        """
+        Research-Driven OSINT: Account Recovery Enumeration.
+        Triggers the password reset flow to get masked contact info.
+        """
+        try:
+            # We use the spoofed session to hit the recovery endpoint
+            url = "https://www.instagram.com/api/v1/accounts/send_password_reset/"
+            headers = {
+                "X-CSRFToken": self.L.context._session.cookies.get("csrftoken", ""),
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": "https://www.instagram.com/accounts/password/reset/"
+            }
+            
+            data = {"email_or_username": username}
+            response = self.session.post(url, data=data, headers=headers)
+            
+            if response.status_code == 200:
+                resp_json = response.json()
+                return {
+                    "username": username,
+                    "status": resp_json.get("status"),
+                    "message": resp_json.get("message"), # e.g. "We sent an email to s***h@g***.com"
+                    "body": resp_json.get("body"), # Often contains the actual tip
+                    "contact_point": resp_json.get("contact_point") # Sometimes present
+                }
+            else:
+                return {"error": f"Failed to trigger recovery. Status: {response.status_code}", "raw": response.text}
+                
+        except Exception as e:
+            raise Exception(f"Recovery enumeration failed: {e}")

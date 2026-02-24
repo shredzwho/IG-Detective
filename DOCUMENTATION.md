@@ -23,6 +23,11 @@
 - [7. Reporting & Data Structure](#7-reporting--data-structure)
 - [8. Development & Maintenance](#8-development--maintenance)
 - [9. Security & Best Practices](#9-security--best-practices)
+- [10. Research-Driven Forensic Modules](#10-research-driven-forensic-modules)
+  - [10.1. Account Recovery Enumeration](#101-account-recovery-enumeration-forgot-pwd-pivot)
+  - [10.2. Co-Visitation Analysis](#102-co-visitation-analysis)
+  - [10.3. Stylometry & Linguistic Profiling](#103-stylometry--linguistic-profiling)
+  - [10.4. Inauthentic Engagement Audit](#104-inauthentic-engagement-audit)
 
 ---
 
@@ -140,6 +145,36 @@ Investigations are stored in `data/<target_username>/`.
 - **Use a Burner Account**: Never use your primary account for deep-scan operations.
 - **Rate Limit Respect**: Even with evasion, high-frequency scraping can trigger manual review. Use the `batch` command with reasonable targets.
 - **Data Privacy**: The generated `data/` folder contains sensitive OSINT information. Ensure it remains git-ignored and handled according to your local privacy laws.
+
+---
+
+## 10. Research-Driven Forensic Modules
+
+These modules implement high-level investigative techniques derived from OSINT industry research.
+
+### 10.1. Account Recovery Enumeration (Forgot PWD Pivot)
+**Command**: `recovery`  
+**Theory**: Triggers the Instagram password reset initiation to capture the "masked" contact tip (e.g., `s***h@g***.com`).  
+**Use Case**: Verifying if a candidate email found via `fwersemail` is the actual administrative backbone of the target account.
+
+### 10.2. Co-Visitation Analysis
+**Command**: `intersect <username2>`  
+**Theory**: Cross-references the GPS history of two different targets.  
+**Threshold**: Flags an intersection if both targets were at the same coordinates within a ±2 hour window. Physical proximity in limited windows is a high-confidence indicator of offline association.
+
+### 10.3. Stylometry & Linguistic Profiling
+**Command**: `stylometry`  
+**Theory**: Generates a "Digital Linguistic Signature" based on:
+- **Emoji Fingerprint**: Frequency distribution of unique emojis.
+- **Punctuation Styling**: Usage patterns of multiple exclamation marks, ellipses, and all-caps emphasis.
+- **Lexical Diversity**: Ratio of unique words used in captions.
+**Use Case**: Linking anonymous or "burner" profiles to a primary target by matching unique writing quirks.
+
+### 10.4. Inauthentic Engagement Audit
+**Command**: `audit`  
+**Theory**: Statistically assesses the organic nature of a profile's interactions.
+- **Temporal Jitter**: Low variance in comment timestamps (e.g., precise 5-second intervals) flags bot activity.
+- **Duplicate Ratio**: Detects high-frequency content duplication typical of "engagement pods".
 
 ---
 *Documentation built for the IG-Detective Community.*

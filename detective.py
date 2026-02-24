@@ -655,6 +655,158 @@ class InteractiveShell(cmd.Cmd):
         
         console.print(f"\n[bold green][*] Batch process complete![/bold green]")
 
+    def do_recovery(self, arg):
+        """Account Recovery Enumeration (Forgot PWD Pivot): recovery"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+            
+        with console.status(f"[bold green]Triggering recovery flow for {self.target}...") as status:
+            try:
+                info = self.scraper.get_recovery_info(self.target)
+                if "error" in info:
+                    console.print(f"[bold red]{info['error']}[/bold red]")
+                    return
+                
+                panel = Panel(
+                    f"[cyan]Status:[/cyan] {info['status']}\n"
+                    f"[cyan]Message:[/cyan] {info['message']}\n"
+                    f"[cyan]Tip:[/cyan] {info.get('body') or 'N/A'}",
+                    title=f"Recovery Recon: {self.target}",
+                    expand=False
+                )
+                console.print(panel)
+                self._save_report("recovery_recon", info)
+                
+                # Check if we have an email in bio to verify
+                if self.target_data.get('business_email'):
+                    email = self.target_data['business_email']
+                    console.print(f"\n[*] Target has business email: [bold cyan]{email}[/bold cyan]")
+                    console.print("[*] Compare this against the Tip above to verify ownership.")
+                
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_intersect(self, arg):
+        """Geospatial Co-Visitation Analysis: intersect <username2>"""
+        if not self.target or not arg:
+            console.print("[bold red]Usage: intersect <username2>[/bold red]")
+            return
+            
+        user2 = arg.strip()
+        with console.status(f"[bold green]Analyzing intersections between {self.target} and {user2}...") as status:
+            try:
+                # Fetch locations for both
+                locs1 = self.scraper.get_locations(self.target, 50)
+                locs2 = self.scraper.get_locations(user2, 50)
+                
+                intersections = DataAnalyzer.find_location_intersections(locs1, locs2)
+                
+                if not intersections:
+                    console.print(f"[yellow]No geospatial intersections found within 2-hour windows.[/yellow]")
+                    return
+                
+                table = Table(title=f"Co-Visitation Analysis: {self.target} ∩ {user2}")
+                table.add_column("Location", style="cyan")
+                table.add_column("T1 (Target)", style="dim")
+                table.add_column("T2 (Pivot)", style="dim")
+                table.add_column("Gap (min)", style="white")
+                
+                for intersect in intersections:
+                    table.add_row(
+                        intersect['location_name'],
+                        intersect['t1'].strftime("%Y-%m-%d %H:%M"),
+                        intersect['t2'].strftime("%Y-%m-%d %H:%M"),
+                        f"{intersect['time_diff_min']:.1f}"
+                    )
+                
+                console.print(table)
+                self._save_report(f"intersection_{user2}", intersections)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_stylometry(self, arg):
+        """Stylometry & Linguistic Profiling: stylometry [limit_posts]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+            
+        limit = 50
+        if arg.isdigit():
+            limit = int(arg)
+            
+        with console.status(f"[bold green]Generating linguistic signature for {self.target}...") as status:
+            try:
+                posts = self.scraper.get_posts(self.target, limit)
+                sig = DataAnalyzer.get_linguistic_signature(posts)
+                
+                if not sig:
+                    console.print("[yellow]Not enough text data to generate signature.[/yellow]")
+                    return
+                
+                console.print(f"\n[bold cyan]Linguistic Signature: {self.target}[/bold cyan]")
+                
+                # Emojis
+                emoji_table = Table(title="Emoji Fingerprint", show_header=False)
+                for emoji, count in sig['top_emojis']:
+                    emoji_table.add_row(emoji, "█" * count + f" ({count})")
+                console.print(emoji_table)
+                
+                # Bigrams
+                console.print(f"\n[bold]Top Phrasal Bigrams:[/bold]")
+                for b in sig['top_bigrams']:
+                    console.print(f" - {b}")
+                
+                # Habits
+                habits = sig['punctuation_habits']
+                console.print(f"\n[bold]Punctuation Habits:[/bold]")
+                console.print(f" - Multiple !!!: {habits['multiple_excl']} occurrences")
+                console.print(f" - Ellipsal ...: {habits['ellipsis']} occurrences")
+                console.print(f" - ALL CAPS Words: {habits['all_caps_words']}")
+                console.print(f" - Lexical Diversity: {sig['lexical_diversity']:.2f}")
+
+                self._save_report("stylometry_signature", sig)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
+    def do_audit(self, arg):
+        """Botnet & Inauthentic Engagement Audit: audit [posts_limit]"""
+        if not self.target:
+            console.print("[bold red]No target set.[/bold red]")
+            return
+            
+        limit = 10
+        if arg.isdigit():
+            limit = int(arg)
+            
+        with console.status(f"[bold green]Auditing engagement authenticity for {self.target}...") as status:
+            try:
+                comments = self.scraper.get_user_comments(self.target, limit)
+                audit = DataAnalyzer.audit_engagement(comments)
+                
+                if not audit:
+                    console.print("[yellow]No comments found to audit.[/yellow]")
+                    return
+                
+                table = Table(title=f"Engagement Audit: {self.target}", show_header=False)
+                table.add_column("Metric", style="cyan")
+                table.add_column("Value", style="white")
+                
+                table.add_row("Temporal Variation (Jitter)", f"{audit['temporal_variation_std']:.4f}")
+                table.add_row("Duplicate Ratio", f"{audit['duplicate_content_ratio']:.2%}")
+                
+                status_color = "red" if audit['is_suspicious'] else "green"
+                table.add_row("Authenticity Status", f"[{status_color}]" + ("SUSPICIOUS" if audit['is_suspicious'] else "ORGANIC") + f"[/{status_color}]")
+                
+                console.print(table)
+                if audit['is_suspicious']:
+                    for r in audit['flagged_reasons']:
+                        console.print(f" [red]![/red] {r}")
+                
+                self._save_report("engagement_audit", audit)
+            except Exception as e:
+                console.print(f"[bold red]Error:[/bold red] {e}")
+
 
 if __name__ == "__main__":
     clear_screen()
