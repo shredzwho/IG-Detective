@@ -5,6 +5,27 @@
 
 ---
 
+## Table of Contents
+- [1. Introduction](#1-introduction)
+- [2. System Architecture](#2-system-architecture)
+- [3. Core Modules](#3-core-modules)
+  - [3.1. Interactive Shell](#31-interactive-shell-detectivepy)
+  - [3.2. Advanced Scraper](#32-advanced-scraper-scraperpy)
+  - [3.3. Forensic Analysis](#33-forensic-analysis-analysispy)
+  - [3.4. Cache Management](#34-cache-management-cachepy)
+- [4. Advanced Evasion Techniques](#4-advanced-evasion-techniques)
+  - [4.1. TLS Fingerprint Spoofing](#41-tls-fingerprint-spoofing)
+  - [4.2. Poisson Jitter Logic](#42-poisson-jitter-logic)
+- [5. Analytical Methodologies](#5-analytical-methodologies)
+  - [5.1. Social Network Analysis (SNA)](#51-social-network-analysis-sna)
+  - [5.2. Temporal Behavior Modeling](#52-temporal-behavior-modeling)
+- [6. Geospatial Intelligence](#6-geospatial-intelligence)
+- [7. Reporting & Data Structure](#7-reporting--data-structure)
+- [8. Development & Maintenance](#8-development--maintenance)
+- [9. Security & Best Practices](#9-security--best-practices)
+
+---
+
 ## 1. Introduction
 
 **IG-Detective** is an advanced Open Source Intelligence (OSINT) framework designed for forensic investigation of Instagram profiles. Beyond simple data scraping, it integrates social network theory, temporal activity analysis, and geospatial intelligence to build a comprehensive picture of a target's digital footprint and physical-world associations.
