@@ -22,6 +22,8 @@
 - [6. Geospatial Intelligence](#6-geospatial-intelligence)
 - [7. Reporting & Data Structure](#7-reporting--data-structure)
 - [8. Development & Maintenance](#8-development--maintenance)
+  - [8.1. Adding New Commands](#81-adding-new-commands)
+  - [8.2. Docker Integration](#82-docker-integration)
 - [9. Security & Best Practices](#9-security--best-practices)
 - [10. Research-Driven Forensic Modules](#10-research-driven-forensic-modules)
   - [10.1. Account Recovery Enumeration](#101-account-recovery-enumeration-forgot-pwd-pivot)
@@ -140,10 +142,23 @@ Investigations are stored in `data/<target_username>/`.
 
 ## 8. Development & Maintenance
 
-### Adding New Commands
+### 8.1. Adding New Commands
 1. Define the logic in `analysis.py` (for data processing) or `scraper.py` (for network fetching).
 2. Add a `do_<command>` method to the `InteractiveShell` class in `detective.py`.
 3. Ensure you use `self._save_report()` to maintain investigation records.
+
+### 8.2. Docker Integration
+IG-Detective is fully containerized using `python:3.11-slim`. 
+
+**Volume Mounting Framework**:
+To ensure that generated `data/` (JSON, TXT, CSV, HTML maps) persists after the container shuts down, you MUST mount a volume linking your local filesystem to `/app/data` inside the container.
+
+**Running the Container:**
+Because the tool relies on a rich, interactive CLI, use the `-it` flags:
+```bash
+docker run -it -v $(pwd)/data:/app/data ig-detective
+```
+Or simply use `docker-compose run --rm detective`.
 
 ---
 

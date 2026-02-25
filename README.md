@@ -62,6 +62,20 @@
    pip install -r requirements.txt
    ```
 
+### 🐳 Run with Docker (Recommended)
+You can run IG-Detective entirely within Docker to avoid dependency issues. The container requires an interactive TTY (`-it`) and a volume mount to save your forensic reports.
+
+1. **Using Docker Compose (Easiest)**
+   ```bash
+   docker-compose run --rm detective
+   ```
+
+2. **Using standard Docker**
+   ```bash
+   docker build -t ig-detective .
+   docker run -it -v $(pwd)/data:/app/data ig-detective
+   ```
+
 ---
 
 ## 🛠 Usage

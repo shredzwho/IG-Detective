@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Git
+.git/
+.gitignore
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# IG-Detective Specific
+data/
+session-*
+*.csv
+*.html
+*.txt
+!requirements.txt
+!README.md
+!DOCUMENTATION.md

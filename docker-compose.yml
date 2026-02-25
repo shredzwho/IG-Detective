@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  detective:
+    build: .
+    image: ig-detective:latest
+    container_name: ig-detective
+    # Required for interactive shell
+    stdin_open: true 
+    tty: true
+    volumes:
+      # Map the local data directory to the container to persist reports
+      - ./data:/app/data
+      # Optional: Persist session files dynamically. 
+      # Since session files are created in the root via instaloader without a sub-folder,
+      # mapping the current directory entirely is not recommended. 
+      # Any session-* file created inside the container will be lost unless copied out, 
+      # but the user can use username+password login inside the container.
