@@ -24,12 +24,24 @@ class InstagramScraper:
         self.L.context._session = self.session
 
     def _get_profile_instance(self, username: str) -> instaloader.Profile:
-        """Helper to get and cache instaloader.Profile instance."""
+        """Helper to get and cache instaloader.Profile instance with retry logic."""
         cache_key = f"profile_obj_{username}"
         profile = self.cache.get(cache_key)
         if not profile:
-            profile = instaloader.Profile.from_username(self.L.context, username)
-            self.cache.set(cache_key, profile)
+            max_retries = 3
+            base_delay = 5
+            for attempt in range(max_retries):
+                try:
+                    profile = instaloader.Profile.from_username(self.L.context, username)
+                    self.cache.set(cache_key, profile)
+                    break
+                except instaloader.exceptions.ConnectionException as e:
+                    if "429" in str(e) and attempt < max_retries - 1:
+                        sleep_time = base_delay * (2 ** attempt) + poisson_jitter(2)
+                        print(f"\n[!] Rate limited (429). Retrying in {sleep_time:.1f}s...")
+                        time.sleep(sleep_time)
+                    else:
+                        raise e
         return profile
 
     def get_profile(self, username: str) -> User:

@@ -164,6 +164,18 @@ class DataAnalyzer:
         Research-Driven OSINT: Stylometry & Linguistic Profiling.
         Analyzes punctuation, emojis, and bigrams to create a digital fingerprint.
         """
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            try:
+                # Add quiet downloading to prevent interactive prompt hangs
+                import urllib.request
+                urllib.request.urlopen("http://google.com", timeout=3)
+                nltk.download('punkt', quiet=True)
+                nltk.download('punkt_tab', quiet=True)
+            except Exception:
+                pass # Fail silently, text analysis will just be less accurate
+
         all_text = " ".join([p.caption for p in posts if p.caption])
         if not all_text:
             return {}

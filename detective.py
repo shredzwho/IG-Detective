@@ -343,18 +343,23 @@ class InteractiveShell(cmd.Cmd):
                     )
                 
                 console.print(table)
-                self._save_report("locations", locations)
-                
                 # Task 3: Interactive Mapping with Folium
                 target_dir = os.path.join(self.report_dir, self.target)
-                m = folium.Map(location=[locations[0]["lat"], locations[0]["lng"]], zoom_start=12)
-                for loc in locations:
-                    if loc["lat"] and loc["lng"]:
-                        folium.Marker(
-                            [loc["lat"], loc["lng"]], 
-                            popup=f"{loc['name']}\n{loc['address']}",
-                            tooltip=loc["timestamp"].strftime("%Y-%m-%d %H:%M")
-                        ).add_to(m)
+                
+                # Check for valid lat/lng before attempting to draw map
+                valid_coords = [loc for loc in locations if loc.get("lat") is not None and loc.get("lng") is not None]
+                
+                if not valid_coords:
+                     console.print("[yellow][*] Could not generate map. No exact GPS coordinates found in posts.[/yellow]")
+                     return
+                     
+                m = folium.Map(location=[valid_coords[0]["lat"], valid_coords[0]["lng"]], zoom_start=12)
+                for loc in valid_coords:
+                    folium.Marker(
+                        [loc["lat"], loc["lng"]], 
+                        popup=f"{loc['name']}\n{loc['address']}",
+                        tooltip=loc["timestamp"].strftime("%Y-%m-%d %H:%M")
+                    ).add_to(m)
                 
                 map_path = os.path.join(target_dir, "interactive_map.html")
                 m.save(map_path)
