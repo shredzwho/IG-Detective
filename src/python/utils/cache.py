@@ -1,6 +1,7 @@
 import time
 from typing import Any, Optional
 
+
 class CacheManager:
     """A simple TTL-based cache manager to reduce redundant network requests."""
     def __init__(self, default_ttl: int = 3600):
@@ -30,8 +31,8 @@ class CacheManager:
     def delete(self, key: str):
         """Remove a specific key from the cache."""
         if key in self._cache:
-            del self._cache[key]
+            return None
 
     def clear(self):
-        """Clear all cached data."""
+        """Clear all cache entries."""
         self._cache.clear()

@@ -207,11 +207,19 @@ class InstagramScraper:
 
         try:
             profile = self._get_profile_instance(username)
+            # Check bio for emails or phone numbers
+            email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', profile.biography)
+            phone_match = re.search(
+                r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}',
+                profile.biography
+            )
             info = {
                 "id": profile.userid,
                 "username": profile.username,
                 "full_name": profile.full_name,
                 "biography": profile.biography,
+                "email_from_bio": email_match.group(0) if email_match else None,
+                "phone_from_bio": phone_match.group(0) if phone_match else None,
                 "followers": profile.followers,
                 "followees": profile.followees,
                 "is_private": profile.is_private,

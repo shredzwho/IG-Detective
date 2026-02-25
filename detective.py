@@ -129,6 +129,11 @@ class InteractiveShell(cmd.Cmd):
             return
             
         target_dir = os.path.join(self.report_dir, self.target)
+        # Ensure we are saving only inside the application report directory
+        if not os.path.abspath(target_dir).startswith(os.path.abspath(self.report_dir)):
+            console.print("[bold red]Path Traversal Prevented.[/bold red]")
+            return
+            
         os.makedirs(target_dir, exist_ok=True)
         
         # Save JSON
@@ -158,13 +163,21 @@ class InteractiveShell(cmd.Cmd):
             print("Usage: target [username]")
             return
         
+        import re
         username = arg.strip()
-        print(f"Checking if user '{username}' exists...")
+        
+        # Sanitize username against path traversal or injection
+        sanitized_username = re.sub(r'[^a-zA-Z0-9_\.]', '', username)
+        if not sanitized_username:
+            print("[bold red]Invalid username format.[/bold red]")
+            return
+        
+        print(f"Checking if user '{sanitized_username}' exists...")
         try:
-            self.target_data = self.scraper.get_user_info(username)
-            self.target = username
-            self.prompt = f'(ig-detective: {username}) '
-            print(f"Target set to: {username}")
+            self.target_data = self.scraper.get_user_info(sanitized_username)
+            self.target = sanitized_username
+            self.prompt = f'(ig-detective: {sanitized_username}) '
+            print(f"Target set to: {sanitized_username}")
         except Exception as e:
             print(f"Error setting target: {e}")
             self.target = None
@@ -638,8 +651,12 @@ class InteractiveShell(cmd.Cmd):
             console.print(f"[bold red]Usage: batch <filename.txt>[/bold red]")
             return
             
-        with open(arg, 'r') as f:
-            targets = [line.strip() for line in f if line.strip()]
+        try:
+            with open(arg, 'r', encoding='utf-8') as f:
+                targets = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            console.print(f"[bold red]Error reading batch file:[/bold red] {e}")
+            return
             
         console.print(f"[bold cyan]Starting batch process for {len(targets)} targets...[/bold cyan]")
         for user in targets:
