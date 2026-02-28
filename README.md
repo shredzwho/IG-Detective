@@ -1,6 +1,6 @@
 # IG-Detective 🕵️‍♂️📸
 
-**Created by [@shredzwho](https://github.com/shredzwho)**
+**Created by [@shredzwho](https://github.com/shredzwho)** | **[💖 Sponsor this project](https://github.com/sponsors/shredzwho)**
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -82,28 +82,23 @@ You can run IG-Detective entirely within Docker to avoid dependency issues. The 
 
 1. **Launch the Shell**
    ```bash
-   python3 detective.py
+   python3 main.py
+   # or use the provided wrapper:
+   ./run.sh
    ```
 
 2. **Core Commands**
+   Once inside the shell, you must first set a target before running analysis modules:
+   
    | Command | Description |
    | :--- | :--- |
-   | `target <user>` | Set the investigation target |
-   | `info` | Show profile details |
-   | `stats` | Get engagement statistics |
-   | `addrs` | Extract location history & generate HTML map |
-   | `sna` | Perform Social Network Analysis (Inner Circle) |
-   | `temporal` | Analyze posting times & predict Time Zone |
-   | `batch <file>` | Autonomous processing of multiple handles |
-   | `tagged` | Find tagged users |
-   | `commenters` | Analyze top interactors |
-   | `fwersemail` | Scan followers for contact info (Slow) |
-   | `fwingsemail` | Scan followings for contact info (Slow) |
-   | `stories` | Fetch active story URLs |
-   | `recovery` | Account Recovery Enumeration (Forgot PWD Scan) |
-   | `intersect <u2>`| Find GPS/Time intersections with second target |
-   | `stylometry` | Generate Linguistic Signature (Bigram Analysis) |
-   | `audit` | Botnet & Inauthentic Engagement Audit |
+   | `target <user>` | Set the investigation target (Required first step) |
+   | `info` | View basic profile OSINT (bio, external links, metadata) |
+   | `posts` | Fetch the target's recent timeline activity & stats |
+   | `sna` | Perform Social Network Analysis to map the "Inner Circle" |
+   | `stylometry` | NLP linguistic profiling on captions (Emojis & N-grams) |
+   | `help` | Display the interactive help menu |
+   | `exit` | Exit the CLI cleanly |
 
 ---
 
@@ -114,10 +109,12 @@ For a deep dive into the system architecture, forensic methodologies, and evasio
 ---
 
 ## 📂 Project Structure
-- `detective.py`: Main interactive shell.
-- `src/python/core/scraper.py`: Advanced scraping logic & evasion.
-- `src/python/core/analysis.py`: Deep OSINT analysis (SNA, Temporal).
-- `src/python/utils/cache.py`: High-performance caching system.
+- `main.py`: Main entrypoint for the shell.
+- `run.sh`: Launch wrapper script.
+- `src/api/`: Network layer containing the `Playwright` stealth client and auth manager.
+- `src/core/`: Foundation layer with data models and config.
+- `src/modules/`: Business logic layer with scrapers and deep analytics tools.
+- `src/cli/`: Presentation layer with the interactive prompt and Rich formatters.
 - `data/`: Automated investigative reports (git-ignored).
 
 ---

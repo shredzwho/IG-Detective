@@ -1,0 +1,145 @@
+import json
+import urllib.parse
+from typing import Dict, Any, Optional
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+from playwright_stealth import Stealth
+from src.core.config import settings
+from src.core.exceptions import NetworkError, AuthenticationError, RateLimitError, UserNotFoundError
+from src.core.cache import global_cache
+from src.api.endpoints import Endpoints
+from src.api.auth import SessionManager
+
+class InstagramClient:
+    """Core network client for Instagram API using Playwright for evasion."""
+    
+    def __init__(self, username: Optional[str] = None):
+        self._playwright = sync_playwright().start()
+        # Launch browser in headless mode
+        self.browser = self._playwright.chromium.launch(headless=True)
+        self.context = self.browser.new_context(
+            user_agent=settings.USER_AGENT,
+            viewport={"width": 1920, "height": 1080},
+            color_scheme="dark",
+            locale="en-US",
+            timezone_id="America/New_York",
+        )
+        
+        self.page = self.context.new_page()
+        Stealth().apply_stealth_sync(self.page)
+        self.page.goto("https://www.instagram.com/", wait_until="commit")
+        
+        self.username = username
+        self.is_authenticated = False
+        
+        if username:
+            try:
+                cookies = SessionManager.load_cookies(username)
+                self.context.add_cookies(cookies)
+                
+                # Fetch CSRF token for GraphQL requests
+                has_session = any(c['name'] == 'sessionid' for c in cookies)
+                if has_session:
+                    self.is_authenticated = True
+                    
+            except AuthenticationError:
+                pass # Proceed as unauthenticated
+                
+    def __del__(self):
+        """Cleanup playwright resources."""
+        if hasattr(self, 'browser') and self.browser:
+            self.browser.close()
+        if hasattr(self, '_playwright') and self._playwright:
+            self._playwright.stop()
+            
+    def _request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Internal robust request handler using Playwright fetch evaluation."""
+        for attempt in range(settings.MAX_RETRIES):
+            try:
+                fetch_options = {
+                    "method": method,
+                    "headers": headers or {}
+                }
+                
+                fetch_script = """
+                async ([url, options]) => {
+                    const response = await fetch(url, options);
+                    const status = response.status;
+                    let data = null;
+                    let text = await response.text();
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        data = text;
+                    }
+                    return { status: status, data: data };
+                }
+                """
+                
+                result = self.page.evaluate(fetch_script, [url, fetch_options])
+                
+                status_code = result.get('status')
+                data = result.get('data')
+                
+                if status_code == 429:
+                    raise RateLimitError("Instagram rate limit (429) hit.")
+                if status_code == 404:
+                    raise UserNotFoundError(f"Endpoint or resource not found at {url}")
+                if status_code in {401, 403}:
+                    raise AuthenticationError("Session invalid or blocked (401/403).")
+                    
+                if status_code and status_code >= 400:
+                    raise NetworkError(f"HTTP {status_code}: {data}")
+                    
+                if isinstance(data, str):
+                    try:
+                        return json.loads(data)
+                    except ValueError:
+                        raise NetworkError(f"Failed to decode JSON from response: {data[:100]}...")
+                return data
+                
+            except PlaywrightTimeoutError:
+                raise NetworkError("Request timed out.")
+            except (NetworkError, RateLimitError) as e:
+                import time
+                from src.modules.evasion import poisson_jitter
+                
+                if attempt < settings.MAX_RETRIES - 1:
+                    sleep_time = poisson_jitter(settings.JITTER_MEAN_FAST) * (attempt + 1)
+                    time.sleep(sleep_time)
+                else:
+                    raise NetworkError(f"Request failed after {settings.MAX_RETRIES} attempts: {e}")
+                    
+    def get_json(self, url: str) -> Dict[str, Any]:
+        """Fetch and parse JSON from Instagram APIs."""
+        return self._request("GET", url)
+
+    def fetch_user_info(self, target: str) -> Dict[str, Any]:
+        """Fetch raw web profile info for a target."""
+        url = Endpoints.user_info(target)
+        # Often requires a specific app-id header
+        headers = {
+            "X-IG-App-ID": "936619743392459",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+        data = self._request("GET", url, headers=headers)
+        if "data" in data and "user" in data["data"]:
+            return data["data"]["user"]
+        return data
+
+    def fetch_graphql(self, query_hash: str, variables: dict) -> Dict[str, Any]:
+        """Fetch data from GraphQL endpoint."""
+        var_str = urllib.parse.quote(json.dumps(variables))
+        url = f"{Endpoints.GRAPHQL_URL}?query_hash={query_hash}&variables={var_str}"
+        
+        headers = {}
+        if self.is_authenticated:
+            # We need CSRF token from cookies 
+            cookies = self.context.cookies()
+            csrf = next((c['value'] for c in cookies if c['name'] == 'csrftoken'), None)
+            if csrf:
+                headers = {
+                    "X-CSRFToken": csrf,
+                    "X-IG-App-ID": "936619743392459"
+                }
+                
+        return self._request("GET", url, headers=headers)

@@ -39,4 +39,4 @@ fi
 
 # Run the detective tool
 echo -e "${GREEN}[*] Launching Interactive Shell...${NC}"
-$PYTHON_EXEC detective.py "$@"
+$PYTHON_EXEC main.py "$@"

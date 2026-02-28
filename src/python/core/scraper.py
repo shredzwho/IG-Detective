@@ -16,12 +16,49 @@ class InstagramScraper:
         self.L = loader
         self.cache = CacheManager()
         self.geolocator = Nominatim(user_agent="ig_detective")
-        
         # Task 1: TLS Fingerprint Spoofing
         # Impersonate a modern browser to bypass CDN rate-limiting
+        old_session = self.L.context._session
         self.session = cffi_requests.Session(impersonate="chrome")
+        
+        # Transfer cookies from the original authenticated session
+        for cookie in old_session.cookies:
+            self.session.cookies.set(cookie.name, cookie.value, domain=cookie.domain, path=cookie.path)
+            
+        self.session.headers.update(old_session.headers)
+        
         # Inject the spoofed session into instaloader
         self.L.context._session = self.session
+        
+        # Patch instaloader's copy_session to support curl_cffi's Session object
+        import instaloader.instaloadercontext
+        original_copy = instaloader.instaloadercontext.copy_session
+        
+        def patched_copy(session, timeout):
+            if isinstance(session, cffi_requests.Session):
+                new = cffi_requests.Session(impersonate="chrome")
+                for k, v in session.cookies.items():
+                    new.cookies.set(k, v)
+                new.headers.update(session.headers)
+                new.proxies = session.proxies.copy() if hasattr(session, 'proxies') else {}
+                return new
+            else:
+                return original_copy(session, timeout)
+                
+        instaloader.instaloadercontext.copy_session = patched_copy
+        
+        # Patch curl_cffi Response to support requests API used by Instaloader
+        if not hasattr(cffi_requests.Response, 'is_redirect'):
+            @property
+            def is_redirect(self):
+                return self.status_code in {301, 302, 303, 307, 308}
+            cffi_requests.Response.is_redirect = is_redirect
+            
+        if not hasattr(cffi_requests.Response, 'text'):
+            @property
+            def text(self):
+                return self.content.decode('utf-8')
+            cffi_requests.Response.text = text
 
     def _get_profile_instance(self, username: str) -> instaloader.Profile:
         """Helper to get and cache instaloader.Profile instance with retry logic."""

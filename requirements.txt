@@ -5,7 +5,8 @@ geopy>=2.4.1
 prettytable>=3.17.0
 
 # Advanced Evasion & Networking
-curl_cffi>=0.14.0
+playwright>=1.41.0
+playwright-stealth>=1.0.6
 numpy>=2.4.2
 
 # Deep Investigative Analysis
@@ -20,3 +21,4 @@ folium>=0.20.0
 # Testing
 pytest>=9.0.2
 requests-mock>=1.12.1
+nltk==3.9.3
