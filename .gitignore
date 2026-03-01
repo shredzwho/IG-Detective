@@ -163,3 +163,7 @@ Osintgram_reference/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# IG-Detective Local Data
+session-*
+surveillance.db
