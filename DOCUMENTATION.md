@@ -47,8 +47,8 @@ The project follows a modular, decoupled architecture to ensure scalability and 
 graph TD
     A[Interactive Shell / detective.py] --> B[InstagramScraper / scraper.py]
     A --> C[DataAnalyzer / analysis.py]
-    B --> D[Instaloader Core]
-    B --> E[curl_cffi / TLS Spoofing]
+    B --> D[Playwright Stealth Context]
+    B --> E[Python-to-JS fetch Evaluation]
     B --> F[CacheManager / cache.py]
     B --> K[Recovery Flow / Account Recon]
     C --> G[NetworkX / SNA]
@@ -93,9 +93,9 @@ A TTL-based object caching system that prevents redundant network requests, spee
 
 ### 4.1. TLS Fingerprint Spoofing
 Traditional scraping tools use standard libraries (like `requests`) that have distinct TLS signatures easily flagged by Cloudflare and Instagram's Akamai CDN.
-IG-Detective uses **`curl_cffi`** to impersonate a modern Chrome browser. This includes:
-- **JA3 Fingerprint Alignment**: Matching the TLS handshake patterns of a real browser.
-- **HTTP/2 Support**: Mimicking the multiplexing behavior of actual user traffic.
+IG-Detective uses **`playwright`** with **`playwright-stealth`** to launch an actual headless Chromium browser in the background. Instead of sending Python requests, it injects native JavaScript `fetch()` calls directly into the page's DOM.
+- **JA3 Fingerprint Alignment**: Perfectly matches a real Chrome browser.
+- **Bot Mitigation Evasion**: Bypasses advanced WAFs that check for Selenium/Puppeteer properties.
 
 ### 4.2. Poisson Jitter Logic
 Static or uniformly random delays (e.g., `random.uniform(5, 10)`) are detectable by sophisticated bot-detection algorithms.
@@ -136,7 +136,17 @@ Investigations are stored in `data/<target_username>/`.
 - **`sna_inner_circle.json`**: Weighted relationship data.
 - **`temporal_analysis.json`**: Sleep patterns and TZ predictions.
 - **`interactive_map.html`**: A standalone browser-viewable map.
-- **`*_contact.csv`**: Scanned email and phone lead lists.
+- **`surveillance.db`**: SQLite database logging all historical metric deltas.
+
+---
+
+## 8. Active Target Surveillance
+
+**Command**: `surveillance`  
+**Theory**: Performs continuous, long-term monitoring of a locked target to identify real-time changes.
+- **Metric Tracking**: Monitors exact follower/following count drifts.
+- **Bio Changes**: Detects arbitrary text changes to user biographies.
+- **Evasion**: Uses massive Poisson Jitter (minutes apart) to prevent the polling loop from appearing like a scraper. Deltas are logged to SQLite (`surveillance.db`) and dumped to the console with timestamps. 
 
 ---
 

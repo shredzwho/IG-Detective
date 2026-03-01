@@ -7,7 +7,7 @@ console = Console()
 
 def print_splash():
     """Renders the main logo and disclaimer."""
-    splash = """
+    splash = r"""
 [bold cyan]    ___ ____      ____       _            _   _               
    |_ _/ ___|    |  _ \  ___| |_ ___  ___| |_(_)_   _____     
     | | |  _ ____| | | |/ _ \ __/ _ \/ __| __| \ \ / / _ \    
@@ -50,6 +50,7 @@ def print_action_menu(target_username: str):
         ("info", "Reconnaissance", "View basic profile information and metrics"),
         ("posts", "Reconnaissance", "Fetch recent timeline media and metadata"),
         ("addrs", "Advanced OSINT", "Extract geographical targets from embedded GPS"),
+        ("surveillance", "Advanced OSINT", "Continuously monitor and trace target metrics/bio changes live"),
         ("temporal", "Analytics", "Calculate timezone and sleep behavior via DBSCAN"),
         ("stylometry", "Analytics", "Analyze linguistic fingerprints and emojis"),
         ("sna", "Analytics", "Build inner-circle network map from tags (Graph Theory)")

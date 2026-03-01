@@ -16,7 +16,7 @@
 ## ⚡ Features
 
 ### 🛡️ Evasion & Stealth (Advanced)
-- **TLS Fingerprint Spoofing**: Uses `curl_cffi` to impersonate a modern Chrome browser at the network level, bypassing CDN rate-limiting.
+- **TLS Fingerprint Spoofing**: Uses a headless Playwright `chromium` browser with `playwright-stealth` to mimic a real environment, completely bypassing Cloudflare and CDN rate-limiting.
 - **Poisson Jitter**: Human-like randomized delays between requests to mimic natural user behavior.
 
 ### 🔍 Core Reconnaissance
@@ -95,7 +95,10 @@ You can run IG-Detective entirely within Docker to avoid dependency issues. The 
    | `target <user>` | Set the investigation target (Required first step) |
    | `info` | View basic profile OSINT (bio, external links, metadata) |
    | `posts` | Fetch the target's recent timeline activity & stats |
+   | `addrs` | Extract geographical targets from embedded GPS |
+   | `surveillance`| Continuously monitor and trace target metrics/bio changes live |
    | `sna` | Perform Social Network Analysis to map the "Inner Circle" |
+   | `temporal`| Calculate timezone and sleep behavior via DBSCAN |
    | `stylometry` | NLP linguistic profiling on captions (Emojis & N-grams) |
    | `help` | Display the interactive help menu |
    | `exit` | Exit the CLI cleanly |

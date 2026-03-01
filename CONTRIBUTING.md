@@ -39,7 +39,8 @@ project-0sint/
     ├── modules/            (Business Logic & OSINT Layer)
     │   ├── recon.py        (Profile, Followers, Tagged Data Scrapers)
     │   ├── analytics.py    (SNA, Temporal, Stylometry Processors)
-    │   └── evasion.py      (Poisson Jitter and Request pacing logic)
+    │   ├── evasion.py      (Poisson Jitter and Request pacing logic)
+    │   └── surveillance.py (Continuous delta-tracking loop)
     │
     └── cli/                (Presentation Layer)
         ├── shell.py        (cmd2/cmd Interactive Prompt & Routing)
