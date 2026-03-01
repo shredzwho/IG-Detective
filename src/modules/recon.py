@@ -48,7 +48,9 @@ class ReconEngine:
             external_url=data.get('external_url'),
             business_category=data.get('business_category_name'),
             business_email=data.get('business_email') or (email_match.group(0) if email_match else None),
-            business_phone=data.get('business_phone_number') or (phone_match.group(0) if phone_match else None)
+            business_phone=data.get('business_phone_number') or (phone_match.group(0) if phone_match else None),
+            obfuscated_email=data.get('obfuscated_email'),
+            obfuscated_phone=data.get('obfuscated_phone')
         )
         
         global_cache.set(cache_key, user)

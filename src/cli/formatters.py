@@ -33,9 +33,11 @@ def print_user_info(u: User):
     table.add_row("Private", "[red]Yes[/red]" if u.is_private else "[green]No[/green]")
     table.add_row("Verified", "[cyan]Yes[/cyan]" if u.is_verified else "No")
     
-    if u.business_email or u.business_phone:
-        table.add_row("Business Email", u.business_email or "None")
-        table.add_row("Business Phone", u.business_phone or "None")
+    if u.business_email or u.business_phone or u.obfuscated_email or u.obfuscated_phone:
+        table.add_row("Email", u.business_email or "None")
+        table.add_row("Phone", u.business_phone or "None")
+        table.add_row("Obfuscated Email", u.obfuscated_email or "None")
+        table.add_row("Obfuscated Phone", u.obfuscated_phone or "None")
         
     console.print(Panel(table, expand=False))
 

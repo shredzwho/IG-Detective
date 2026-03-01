@@ -167,3 +167,4 @@ Thumbs.db
 # IG-Detective Local Data
 session-*
 surveillance.db
+test_*.py

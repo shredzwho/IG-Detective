@@ -17,6 +17,8 @@ class User:
     business_category: Optional[str] = None
     business_email: Optional[str] = None
     business_phone: Optional[str] = None
+    obfuscated_email: Optional[str] = None
+    obfuscated_phone: Optional[str] = None
 
 @dataclass
 class Post:
