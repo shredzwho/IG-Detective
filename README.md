@@ -37,6 +37,7 @@
 - **Engagement Audit (`audit`)**: Statistical detection of inauthentic bot activity via temporal jitter variance.
 
 ### 📦 Investigation Management
+- **One-Click Export (`data`)**: Automatically download a target's followers list, following list, and timeline media (with metadata JSON), packaged into a single ZIP archive.
 - **Automated Reporting**: Every command automatically saves results to JSON and TXT reports in `data/<target>/`.
 - **Autonomous Batch Mode**: Process multiple targets sequentially from a text file.
 - **Intelligent Caching**: Lightning-fast repeated queries via TTL-based caching.
@@ -96,6 +97,7 @@ You can run IG-Detective entirely within Docker to avoid dependency issues. The 
    | `info` | View basic profile OSINT (bio, external links, metadata) |
    | `posts` | Fetch the target's recent timeline activity & stats |
    | `addrs` | Extract geographical targets from embedded GPS |
+   | `data` | Export target footprints (media, followers) to a ZIP File |
    | `surveillance`| Continuously monitor and trace target metrics/bio changes live |
    | `sna` | Perform Social Network Analysis to map the "Inner Circle" |
    | `temporal`| Calculate timezone and sleep behavior via DBSCAN |

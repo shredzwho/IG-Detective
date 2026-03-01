@@ -138,6 +138,14 @@ Investigations are stored in `data/<target_username>/`.
 - **`interactive_map.html`**: A standalone browser-viewable map.
 - **`surveillance.db`**: SQLite database logging all historical metric deltas.
 
+### 7.1. Full Footprint Extraction (`data` command)
+
+The `data` command executes a comprehensive extraction of a target's digital footprint and automatically compresses it into a `.zip` archive.
+- **Network Extraction**: Paginates through the target's entire Followers and Following lists using optimized GraphQL endpoints (`HASH_FOLLOWERS` / `HASH_FOLLOWINGS`) to bypass standard REST limitations.
+- **Media Archival**: Scrapes timeline assets (images and mp4 videos) and serializes the caption, timestamp, and like-count metadata into `posts_metadata.json`.
+- **Packaging**: Drops everything into a timestamped Zip file (e.g., `shredzwho_forensic_export_17100000.zip`).
+
+
 ---
 
 ## 8. Active Target Surveillance

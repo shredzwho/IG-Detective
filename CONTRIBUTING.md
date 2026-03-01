@@ -40,7 +40,8 @@ project-0sint/
     │   ├── recon.py        (Profile, Followers, Tagged Data Scrapers)
     │   ├── analytics.py    (SNA, Temporal, Stylometry Processors)
     │   ├── evasion.py      (Poisson Jitter and Request pacing logic)
-    │   └── surveillance.py (Continuous delta-tracking loop)
+    │   ├── surveillance.py (Continuous delta-tracking loop)
+    │   └── exporter.py     (Mass footprint Zip packaging engine)
     │
     └── cli/                (Presentation Layer)
         ├── shell.py        (cmd2/cmd Interactive Prompt & Routing)
