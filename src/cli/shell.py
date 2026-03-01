@@ -5,6 +5,7 @@ from src.api.client import InstagramClient
 from src.modules.recon import ReconEngine
 from src.modules.analytics import AnalyticsEngine
 from src.modules.surveillance import SurveillanceEngine
+from src.modules.exporter import DataExporter
 from src.cli.formatters import console, print_splash, print_user_info, print_action_menu
 
 class IGDetectiveShell(cmd2.Cmd):
@@ -15,6 +16,7 @@ class IGDetectiveShell(cmd2.Cmd):
         self.api = client
         self.recon = ReconEngine(client)
         self.surveillance = SurveillanceEngine()
+        self.exporter = DataExporter(client, self.recon)
         self.target_username = None
         
         # UI Setup
@@ -110,6 +112,23 @@ class IGDetectiveShell(cmd2.Cmd):
             t.add_row(loc['name'], coords, loc['address'] or "Reverse Geolocating Failed")
             
         console.print(t)
+
+    def do_data(self, args):
+        """Export the victim's data to a ZIP archive (Posts, Followers, Following, Stories)."""
+        if not self.target_username:
+            console.print("[red]Set a target first using 'target <username>'[/red]")
+            return
+            
+        with console.status(f"[bold cyan]Initializing Data Export for @{self.target_username}...[/bold cyan]", spinner="arrow3") as status:
+            try:
+                def update_status(msg):
+                    status.update(f"[bold cyan]{msg}[/bold cyan]")
+                    
+                zip_path = self.exporter.export_target_data(self.target_username, callback=update_status)
+                console.print(f"\n[bold green]✅ Export completed successfully![/bold green]")
+                console.print(f"📦 Archive saved at: [bold magenta]{zip_path}[/bold magenta]")
+            except Exception as e:
+                console.print(f"\n[bold red]❌ Process failed during data export: {e}[/bold red]")
 
     def do_surveillance(self, args):
         """Continuously monitor target profile for metric and bio modifications."""

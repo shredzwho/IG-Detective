@@ -52,6 +52,7 @@ def print_action_menu(target_username: str):
         ("info", "Reconnaissance", "View basic profile information and metrics"),
         ("posts", "Reconnaissance", "Fetch recent timeline media and metadata"),
         ("addrs", "Advanced OSINT", "Extract geographical targets from embedded GPS"),
+        ("data", "Investigation", "Export target footprints (media, followers) to a ZIP File"),
         ("surveillance", "Advanced OSINT", "Continuously monitor and trace target metrics/bio changes live"),
         ("temporal", "Analytics", "Calculate timezone and sleep behavior via DBSCAN"),
         ("stylometry", "Analytics", "Analyze linguistic fingerprints and emojis"),
