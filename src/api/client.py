@@ -71,7 +71,7 @@ class InstagramClient:
         if hasattr(self, '_playwright') and self._playwright:
             self._playwright.stop()
             
-    def _request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def _request(self, method: str, url: str, headers: Optional[Dict[str, str]] = None, omit_cookies: bool = False) -> Dict[str, Any]:
         """Internal robust request handler using Playwright fetch evaluation."""
         for attempt in range(settings.MAX_RETRIES):
             try:
@@ -79,6 +79,8 @@ class InstagramClient:
                     "method": method,
                     "headers": headers or {}
                 }
+                if omit_cookies:
+                    fetch_options["credentials"] = "omit"
                 
                 fetch_script = """
                 async ([url, options]) => {
@@ -134,14 +136,42 @@ class InstagramClient:
         return self._request("GET", url)
 
     def fetch_user_info(self, target: str) -> Dict[str, Any]:
-        """Fetch raw web profile info for a target."""
+        """Fetch raw web profile info for a target using stable Instaloader engine if authenticated."""
+        if self.is_authenticated and self.username:
+            try:
+                import instaloader
+                L = instaloader.Instaloader(dirname_pattern=settings.SESSION_DIR, quiet=True)
+                L.load_session_from_file(self.username, filename=SessionManager.get_session_file(self.username))
+                profile = instaloader.Profile.from_username(L.context, target)
+                
+                # Map expected fields
+                return {
+                    "id": str(profile.userid),
+                    "username": profile.username,
+                    "full_name": profile.full_name,
+                    "biography": profile.biography,
+                    "edge_followed_by": {"count": profile.followers},
+                    "edge_follow": {"count": profile.followees},
+                    "is_private": profile.is_private,
+                    "is_verified": profile.is_verified,
+                    "business_email": profile.business_email,
+                    "business_phone_number": profile.business_phone_number,
+                    "profile_pic_url_hd": profile.profile_pic_url
+                }
+            except Exception as e:
+                pass # Fallback to standard request
+
+        # Fallback to standard web endpoint, unauthenticated for shadowban evasion
         url = Endpoints.user_info(target)
-        # Often requires a specific app-id header
+        
         headers = {
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
             "X-IG-App-ID": "936619743392459",
             "X-Requested-With": "XMLHttpRequest"
         }
-        data = self._request("GET", url, headers=headers)
+        
+        data = self._request("GET", url, headers=headers, omit_cookies=True)
         if "data" in data and "user" in data["data"]:
             return data["data"]["user"]
         return data

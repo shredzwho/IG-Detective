@@ -16,7 +16,6 @@ class Endpoints:
     HASH_FOLLOWERS = "c76146de99bb02f641520449d8654661"
     HASH_FOLLOWINGS = "d04b0a864b4b54837c0d870b0e77e076"
     HASH_COMMENTS = "bc3296d1ce80a24b1b6e40b1e72903f5"
-    
     @staticmethod
     def user_info(username: str) -> str:
         return f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}"
