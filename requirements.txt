@@ -3,6 +3,7 @@ instaloader>=4.15
 rich>=14.3
 geopy>=2.4.1
 prettytable>=3.17.0
+cmd2>=2.4.0
 
 # Advanced Evasion & Networking
 playwright>=1.41.0
