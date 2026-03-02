@@ -56,7 +56,10 @@ def print_action_menu(target_username: str):
         ("surveillance", "Advanced OSINT", "Continuously monitor and trace target metrics/bio changes live"),
         ("temporal", "Analytics", "Calculate timezone and sleep behavior via DBSCAN"),
         ("stylometry", "Analytics", "Analyze linguistic fingerprints and emojis"),
-        ("sna", "Analytics", "Build inner-circle network map from tags (Graph Theory)")
+        ("sna", "Analytics", "Build inner-circle network map from tags (Graph Theory)"),
+        ("recovery", "Investigation", "Trigger account recovery enumeration to find masked emails/phones"),
+        ("intersect", "Investigation", "Cross-reference GPS history of current target with another target"),
+        ("audit", "Analytics", "Statistically assess the organic nature of interactions")
     ]
     
     for cmd, cat, desc in commands:
