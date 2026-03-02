@@ -91,7 +91,11 @@ class DataExporter:
         if callback: callback("Scraping timeline media...")
         posts = self.recon.get_recent_posts(username, 24) # Fetch double the default
         
+        import concurrent.futures
+
         metadata = []
+        download_tasks = []
+        
         for i, p in enumerate(posts):
             metadata.append({
                 "id": p.id,
@@ -107,7 +111,13 @@ class DataExporter:
             if media_url:
                 ext = ".mp4" if p.is_video else ".jpg"
                 dest = os.path.join(media_dir, f"post_{p.id}{ext}")
-                self._download_file(media_url, dest)
+                download_tasks.append((media_url, dest))
+                
+        # Optimize: Parallel asynchronous downloading for network-bound operations
+        if download_tasks:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                futures = [executor.submit(self._download_file, url, path) for url, path in download_tasks]
+                concurrent.futures.wait(futures)
                 
         with open(os.path.join(target_dir, "posts_metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)

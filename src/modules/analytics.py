@@ -10,6 +10,15 @@ from src.core.models import Post
 
 class AnalyticsEngine:
     """Core processing unit for advanced OSINT calculations."""
+    
+    # Pre-compiled Regex patterns for NLP speed
+    _HASHTAG_REGEX = re.compile(r"#(\w+)")
+    _EMOJI_REGEX = re.compile(r'[^\w\s,.]')
+    _EXCL_REGEX = re.compile(r'!!+')
+    _QMARK_REGEX = re.compile(r'\?\?+')
+    _ELLIPSIS_REGEX = re.compile(r'\.\.\.')
+    _ALL_CAPS_REGEX = re.compile(r'\b[A-Z]{2,}\b')
+    _WORD_REGEX = re.compile(r'\b\w+\b')
 
     @staticmethod
     def get_most_used_hashtags(posts: List[Post], top_n: int = 10) -> List[Tuple]:
@@ -17,7 +26,7 @@ class AnalyticsEngine:
         all_hashtags = []
         for post in posts:
             if post.caption:
-                hashtags = re.findall(r"#(\w+)", post.caption)
+                hashtags = AnalyticsEngine._HASHTAG_REGEX.findall(post.caption)
                 all_hashtags.extend(hashtags)
         return Counter(all_hashtags).most_common(top_n)
 
@@ -123,17 +132,17 @@ class AnalyticsEngine:
         all_text = " ".join([p.caption for p in posts if p.caption])
         if not all_text: return {}
 
-        emojis = re.findall(r'[^\w\s,.]', all_text)
+        emojis = AnalyticsEngine._EMOJI_REGEX.findall(all_text)
         emoji_dist = Counter(emojis).most_common(10)
 
         punctuation = {
-            "multiple_excl": len(re.findall(r'!!+', all_text)),
-            "multiple_qmark": len(re.findall(r'\?\?+', all_text)),
-            "ellipsis": len(re.findall(r'\.\.\.', all_text)),
-            "all_caps_words": len(re.findall(r'\b[A-Z]{2,}\b', all_text))
+            "multiple_excl": len(AnalyticsEngine._EXCL_REGEX.findall(all_text)),
+            "multiple_qmark": len(AnalyticsEngine._QMARK_REGEX.findall(all_text)),
+            "ellipsis": len(AnalyticsEngine._ELLIPSIS_REGEX.findall(all_text)),
+            "all_caps_words": len(AnalyticsEngine._ALL_CAPS_REGEX.findall(all_text))
         }
 
-        words = re.findall(r'\b\w+\b', all_text.lower())
+        words = AnalyticsEngine._WORD_REGEX.findall(all_text.lower())
         bigrams = list(ngrams(words, 2))
         top_bigrams = Counter(bigrams).most_common(10)
 
@@ -142,4 +151,71 @@ class AnalyticsEngine:
             "punctuation_habits": punctuation,
             "top_bigrams": [f"{b[0]} {b[1]}" for b, count in top_bigrams],
             "lexical_diversity": len(set(words)) / len(words) if words else 0
+        }
+
+    @staticmethod
+    def compare_locations(locs1: List[dict], locs2: List[dict]) -> List[dict]:
+        """
+        Co-Visitation Analysis (Section 10.2).
+        Cross-references GPS history. Flags intersection if within 2 hours at same coordinates.
+        """
+        import geopy.distance
+        from datetime import timedelta
+        
+        intersections = []
+        for l1 in locs1:
+            if not l1.get('lat') or not l1.get('lng'): continue
+            
+            for l2 in locs2:
+                if not l2.get('lat') or not l2.get('lng'): continue
+                
+                # Check Time proximity (± 2 hours)
+                time_diff = abs(l1['timestamp'] - l2['timestamp'])
+                if time_diff <= timedelta(hours=2):
+                    # Check Spatial proximity (exact coordinates or within ~100 meters)
+                    dist = geopy.distance.distance((l1['lat'], l1['lng']), (l2['lat'], l2['lng'])).meters
+                    if dist <= 100:
+                        intersections.append({
+                            "location_1": l1,
+                            "location_2": l2,
+                            "time_diff": str(time_diff),
+                            "distance_meters": dist
+                        })
+        return intersections
+
+    @staticmethod
+    def audit_engagement(posts: List[Post]) -> dict:
+        """
+        Inauthentic Engagement Audit (Section 10.4).
+        Statistically assesses the organic nature of a profile's interactions.
+        """
+        if not posts or len(posts) < 2:
+            return {"status": "Insufficient data"}
+            
+        import numpy as np
+        
+        # 1. Temporal Jitter (Variance between post times)
+        posts_sorted = sorted(posts, key=lambda x: x.timestamp)
+        intervals = []
+        for i in range(1, len(posts_sorted)):
+            diff_seconds = (posts_sorted[i].timestamp - posts_sorted[i-1].timestamp).total_seconds()
+            intervals.append(diff_seconds)
+            
+        jitter_variance = np.var(intervals) if intervals else 0
+        
+        # 2. Duplicate Ratio (high frequency of exact same captions)
+        captions = [p.caption for p in posts if p.caption]
+        duplicate_ratio = 1.0 - (len(set(captions)) / len(captions)) if captions else 0.0
+        
+        # Basic heuristic logic for bot detection
+        is_bot = duplicate_ratio > 0.5 or (jitter_variance < 10.0 and len(intervals) > 5)
+        
+        return {
+            "temporal_jitter_variance": jitter_variance,
+            "duplicate_content_ratio": duplicate_ratio,
+            "bot_probability": "High" if is_bot else "Low",
+            "flags": [
+                "Low Temporal Variance" if jitter_variance < 10.0 else "",
+                "High Content Duplication" if duplicate_ratio > 0.5 else ""
+            ]
         }

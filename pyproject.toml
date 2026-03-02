@@ -3,7 +3,7 @@ name = "ig-detective"
 version = "0.1.0"
 description = "Advanced OSINT tool for Instagram with modern CLI and safe scraping features."
 authors = [
-    {name = "shredzwho", email = "your.email@example.com"},
+    {name = "shredzwho", email = "shreyytpvt14@gmail.com"},
 ]
 dependencies = [
     "instaloader>=4.10",

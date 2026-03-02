@@ -239,6 +239,77 @@ class IGDetectiveShell(cmd2.Cmd):
         
         console.print(t)
 
+    def do_recovery(self, args):
+        """Trigger account recovery enumeration to find masked emails/phones."""
+        if not self.target_username:
+            console.print("[red]Set a target first.[/red]")
+            return
+            
+        with console.status("[bold cyan]Initiating password reset pivot...", spinner="dots"):
+            recovery_data = self.recon.trigger_recovery_flow(self.target_username)
+            
+        if not recovery_data.get("has_recovery"):
+            console.print("[yellow]No recovery points found or rate limit hit.[/yellow]")
+            return
+            
+        console.print("\n[bold cyan]🔓 Account Recovery Enumeration Results:[/bold cyan]")
+        for email in recovery_data.get("emails", []):
+            console.print(f"  📧 Masked Email: {email}")
+        for phone in recovery_data.get("phones", []):
+            console.print(f"  📱 Masked Phone: {phone}")
+
+    def do_intersect(self, args):
+        """Cross-reference GPS history of current target with another target."""
+        if not self.target_username:
+            console.print("[red]Set a target first.[/red]")
+            return
+            
+        target2 = args.strip()
+        if not target2:
+            console.print("[red]Usage: intersect <username2>[/red]")
+            return
+            
+        with console.status(f"[bold cyan]Cross-referencing {self.target_username} vs {target2}...", spinner="dots"):
+            locs1 = self.recon.get_locations(self.target_username)
+            locs2 = self.recon.get_locations(target2)
+            intersections = AnalyticsEngine.compare_locations(locs1, locs2)
+            
+        if not intersections:
+            console.print(f"[yellow]No temporal/spatial intersections found between {self.target_username} and {target2}.[/yellow]")
+            return
+            
+        console.print(f"\n[bold red]⚠️ Co-Visitation Intersections Detected![/bold red]")
+        for i, match in enumerate(intersections, 1):
+            console.print(f"  [{i}] Location: {match['location_1']['name']}")
+            console.print(f"      Distance offset: {match['distance_meters']:.1f}m")
+            console.print(f"      Time offset: {match['time_diff']}")
+
+    def do_audit(self, args):
+        """Statistically assess the organic nature of interactions."""
+        if not self.target_username:
+            console.print("[red]Set a target first.[/red]")
+            return
+            
+        with console.status("[bold cyan]Running Inauthentic Engagement Audit...", spinner="dots"):
+            posts = self.recon.get_recent_posts(self.target_username, 24)
+            audit_results = AnalyticsEngine.audit_engagement(posts)
+            
+        if audit_results.get("status") == "Insufficient data":
+            console.print("[yellow]Insufficient timeline data for an audit.[/yellow]")
+            return
+            
+        console.print("\n[bold cyan]🤖 Engagement Audit Results:[/bold cyan]")
+        console.print(f"  Temporal Jitter Variance: {audit_results['temporal_jitter_variance']:.2f}")
+        console.print(f"  Content Duplication Ratio: {audit_results['duplicate_content_ratio']:.2f}")
+        bot_style = "red bold" if audit_results['bot_probability'] == 'High' else "green"
+        console.print(f"  Bot/Inauthentic Probability: [{bot_style}]{audit_results['bot_probability']}[/{bot_style}]")
+        
+        flags = [f for f in audit_results.get('flags', []) if f]
+        if flags:
+            console.print("  [bold red]Red Flags Triggered:[/bold red]")
+            for flag in flags:
+                console.print(f"    - {flag}")
+
     def do_help(self, arg):
         """Displays interactive /help menu."""
         if not arg:
@@ -254,6 +325,12 @@ class IGDetectiveShell(cmd2.Cmd):
             console.print("Usage: type `sna`, no arguments needed.")
         elif cmd == "stylometry":
             console.print("[bold cyan]STYLOMETRY COMMAND[/bold cyan]: NLP linguistic profiling. Scans n-grams, common punctuation errors, and emojis across the user's captions to fingerprint writing styles.")
+        elif cmd == "recovery":
+            console.print("[bold cyan]RECOVERY COMMAND[/bold cyan]: Triggers password reset pivot to enumerate masked admin emails/phones.")
+        elif cmd == "intersect":
+            console.print("[bold cyan]INTERSECT COMMAND[/bold cyan]: Cross-references GPS history. Usage: `intersect <target2>`")
+        elif cmd == "audit":
+            console.print("[bold cyan]AUDIT COMMAND[/bold cyan]: Statistically assesses inorganic/bot interactions via jitter anomalies.")
         else:
             super().do_help(arg)
 

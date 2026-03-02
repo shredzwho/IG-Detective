@@ -14,8 +14,19 @@ class InstagramClient:
     
     def __init__(self, username: Optional[str] = None):
         self._playwright = sync_playwright().start()
-        # Launch browser in headless mode
-        self.browser = self._playwright.chromium.launch(headless=True)
+        
+        # Memory & Speed Optimization: Stripped down headless Chromium
+        self.browser = self._playwright.chromium.launch(
+            headless=True,
+            args=[
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--mute-audio"
+            ]
+        )
         self.context = self.browser.new_context(
             user_agent=settings.USER_AGENT,
             viewport={"width": 1920, "height": 1080},
@@ -25,6 +36,15 @@ class InstagramClient:
         )
         
         self.page = self.context.new_page()
+        
+        # Memory & Speed Optimization: Intercept and block heavy visual assets
+        def block_heavy_assets(route):
+            if route.request.resource_type in ["image", "media", "font", "stylesheet"]:
+                route.abort()
+            else:
+                route.continue_()
+        self.page.route("**/*", block_heavy_assets)
+        
         Stealth().apply_stealth_sync(self.page)
         self.page.goto("https://www.instagram.com/", wait_until="commit")
         
@@ -143,3 +163,38 @@ class InstagramClient:
                 }
                 
         return self._request("GET", url, headers=headers)
+
+    def initiate_password_reset(self, target: str) -> Dict[str, Any]:
+        """Trigger the Instagram password reset flow to enumerate masked contacts."""
+        url = "https://i.instagram.com/api/v1/users/lookup/"
+        headers = {
+            "User-Agent": "Instagram 114.0.0.38.120 Android (23/6.0.1; 640dpi; 1440x2560; samsung; SM-G935F; hero2lte; samsungexynos8890; en_US; 170469888)",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        
+        # Prepare the urlencoded body
+        body = f"q={target}&waterfall_id=123456789"
+        
+        fetch_options = {
+            "method": "POST",
+            "headers": headers,
+            "body": body
+        }
+        
+        fetch_script = """
+        async ([url, options]) => {
+            const response = await fetch(url, options);
+            const status = response.status;
+            let data = null;
+            let text = await response.text();
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                data = text;
+            }
+            return { status: status, data: data };
+        }
+        """
+        
+        result = self.page.evaluate(fetch_script, [url, fetch_options])
+        return result.get('data', {})

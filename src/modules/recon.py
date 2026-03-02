@@ -9,6 +9,10 @@ from src.modules.evasion import apply_jitter
 class ReconEngine:
     """Intelligently maps raw Instagram API JSON into strict Dataclass OSINT models."""
     
+    # Pre-compiled Regex Patterns for speed
+    _EMAIL_REGEX = re.compile(r'[\w\.-]+@[\w\.-]+\.\w+')
+    _PHONE_REGEX = re.compile(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}')
+
     def __init__(self, api_client: InstagramClient):
         self.api = api_client
         # Lazy load geolocator to speed up boot
@@ -31,9 +35,9 @@ class ReconEngine:
         data = self.api.fetch_user_info(username)
         
         bio = data.get('biography', '')
-        # OSINT: Extract potential emails/phones hidden in the bio string
-        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', bio)
-        phone_match = re.search(r'\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}', bio)
+        # OSINT: Extract potential emails/phones hidden in the bio string using pre-compiled regex
+        email_match = self._EMAIL_REGEX.search(bio)
+        phone_match = self._PHONE_REGEX.search(bio)
         
         user = User(
             id=str(data.get('id', '')),
@@ -140,3 +144,41 @@ class ReconEngine:
                         pass
                 locations.append(loc_info)
         return locations
+
+    def trigger_recovery_flow(self, username: str) -> dict:
+        """Trigger password reset to extract masked contacts (Section 10.1)."""
+        apply_jitter("fast")
+        data = self.api.initiate_password_reset(username)
+        
+        # Parse the JSON response for the hidden contact info
+        result = {
+            "has_recovery": False,
+            "emails": [],
+            "phones": []
+        }
+        
+        if data and data.get("user"):
+            user_data = data["user"]
+            result["has_recovery"] = True
+            
+            # Instagram sometimes returns multiple recovery options
+            # They might be listed in 'step_data' or direct fields
+            step_data = data.get("step_data", {})
+            contact_points = step_data.get("contact_points", [])
+            
+            for point in contact_points:
+                pt_type = point.get("contact_type")
+                display = point.get("display")
+                if pt_type == "EMAIL" and display:
+                    result["emails"].append(display)
+                elif pt_type == "PHONE" and display:
+                    result["phones"].append(display)
+                    
+            # Fallback for older API versions
+            if not result["emails"] and data.get("obfuscated_email"):
+                result["emails"].append(data["obfuscated_email"])
+                
+            if not result["phones"] and data.get("obfuscated_phone"):
+                result["phones"].append(data["obfuscated_phone"])
+                
+        return result
