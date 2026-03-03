@@ -126,6 +126,7 @@ class ReconEngine:
         """High level OSINT: Extract mapped locations."""
         posts = self.get_recent_posts(username, count=limit)
         locations = []
+        import time
         for p in posts:
             if p.location_name:
                 loc_info = {
@@ -135,13 +136,27 @@ class ReconEngine:
                     "timestamp": p.timestamp,
                     "address": None
                 }
+                
+                # If API provided raw GPS: use reverse geocoding to find address.
                 if p.location_lat and p.location_lng:
                     try:
-                        time.sleep(1) # Be nice to geopy
-                        loc = self.geolocator.reverse(f"{p.location_lat}, {p.location_lng}")
+                        time.sleep(1.2) # Be nice to geopy
+                        loc = self.geolocator.reverse(f"{p.location_lat}, {p.location_lng}", timeout=10)
                         if loc: loc_info["address"] = loc.address
                     except Exception:
                         pass
+                # Modern OSINT Fallback: If IG stripped the raw GPS but gave us the Location Title, forward geocode it!
+                else:
+                    try:
+                        time.sleep(1.2)
+                        loc = self.geolocator.geocode(p.location_name, timeout=10)
+                        if loc:
+                            loc_info["lat"] = loc.latitude
+                            loc_info["lng"] = loc.longitude
+                            loc_info["address"] = loc.address
+                    except Exception:
+                        pass
+                        
                 locations.append(loc_info)
         return locations
 

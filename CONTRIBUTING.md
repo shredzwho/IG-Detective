@@ -16,7 +16,7 @@ Before developing, ensure you have:
 The project has recently been rebuilt from the ground up to follow a strict modular pattern, decoupling the CLI UI from the network scraping logic.
 
 ```
-project-0sint/
+IG-Detective/
 ├── main.py                 (Main application entrypoint)
 ├── run.sh                  (Environment launch wrapper)
 ├── requirements.txt
