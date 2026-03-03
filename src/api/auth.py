@@ -80,7 +80,9 @@ class SessionManager:
                         "name": name,
                         "value": str(value), # Ensure value is string
                         "domain": ".instagram.com", # Hardcoded domain requirements for playwright
-                        "path": "/"
+                        "path": "/",
+                        "secure": True,
+                        "sameSite": "None"
                     })
                     
                 return playwright_cookies
