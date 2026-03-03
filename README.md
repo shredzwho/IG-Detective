@@ -17,7 +17,12 @@
 
 ### 🛡️ Evasion & Stealth (Advanced)
 - **TLS Fingerprint Spoofing**: Uses a headless Playwright `chromium` browser with `playwright-stealth` to mimic a real environment, completely bypassing Cloudflare and CDN rate-limiting.
+- **Deep Evasion Fallback**: Automatically cascades to an unauthenticated headless browser fetch if an authenticated session is shadowbanned (e.g., HTTP 401/429/400 blocks), omitting cookies and forging headers to emulate a pristine pristine connection.
 - **Poisson Jitter**: Human-like randomized delays between requests to mimic natural user behavior.
+
+### ⚡ Performance & Optimization
+- **Headless Memory Tuning**: Stripped-down Playwright browser configuration that explicitly drops heavy visual assets (images, fonts, stylesheets) via route interception to achieve ultra-fast query speeds.
+- **Asynchronous Data Export**: Utilizes ThreadPool parallel downloading for the `data` archival command, drastically speeding up complete profile media replication.
 
 ### 🔍 Core Reconnaissance
 - **User Info**: Comprehensive profile details (ID, Bio, Followers, Business status).

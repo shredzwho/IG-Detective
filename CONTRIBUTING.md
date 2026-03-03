@@ -72,6 +72,9 @@ Because Instagram heavily utilizes browser fingerprinting to block bots:
 - It spins up a hidden Chromium instance.
 - It injects native Javascript `fetch()` calls into the actual browser page rather than using Python `requests`, perfectly mimicking an organic user's TLS and DOM fingerprints.
 - If you need to hit a new endpoint, add the URL format string to `endpoints.py`, and use `client.get_json(url)` or `client.fetch_graphql(...)`. DO NOT bypass `InstagramClient`.
+- **Evasion Fallbacks**: If an authenticated session is blocked by Instagram (e.g. shadowbanned), implement robust fallback logic to retry the request without cookies (using `omit_cookies=True` in `_request`) or via alternative endpoints.
+- **CSRF Forgery**: When working with sensitive mobile or web API endpoints (like password recovery), dynamically extract the `"csrftoken"` from `self.context.cookies()` and include it in your HTTP headers as `"X-CSRFToken"`.
+- **Error Bubbling**: Always bubble up `RateLimitError` (HTTP 429) out of your API methods to the presentation layer so the user knows exactly why a request failed, rather than silently swallowing the error.
 
 ## 🛠️ Code Style & Rules
 
