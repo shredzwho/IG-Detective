@@ -51,13 +51,13 @@ class IGDetectiveShell(cmd2.Cmd):
         try:
             with console.status("[bold cyan]Fetching profile metadata...", spinner="dots"):
                 user = self.recon.get_user_profile(username)
-                
-            self.target_username = user.username
-            self.prompt = f"\n[IG-detective] \033[1;35m@{self.target_username}\033[0m > "
-            console.print(f"[bold green][*] Target successfully set to @{self.target_username}[/bold green]")
         except Exception as e:
-            console.print(f"[bold red]❌ Error setting target: {e}[/bold red]")
-            self.target_username = None
+            console.print(f"[bold yellow]⚠️ Warning: Failed to extract full web profile info: {e}[/bold yellow]")
+            console.print("[dim]Target locked regardless. Proceeding to advanced enumeration modules.[/dim]")
+            
+        self.target_username = username
+        self.prompt = f"\n[IG-detective] \033[1;35m@{self.target_username}\033[0m > "
+        console.print(f"[bold green][*] Target successfully set to @{self.target_username}[/bold green]")
             
     def do_info(self, args):
         """View basic profile intelligence via target web info."""
@@ -246,10 +246,14 @@ class IGDetectiveShell(cmd2.Cmd):
             return
             
         with console.status("[bold cyan]Initiating password reset pivot...", spinner="dots"):
-            recovery_data = self.recon.trigger_recovery_flow(self.target_username)
+            try:
+                recovery_data = self.recon.trigger_recovery_flow(self.target_username)
+            except Exception as e:
+                console.print(f"[bold red]❌ Recovery failed: {e}[/bold red]")
+                return
             
         if not recovery_data.get("has_recovery"):
-            console.print("[yellow]No recovery points found or rate limit hit.[/yellow]")
+            console.print("[yellow]No recovery points found.[/yellow]")
             return
             
         console.print("\n[bold cyan]🔓 Account Recovery Enumeration Results:[/bold cyan]")

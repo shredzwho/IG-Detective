@@ -144,8 +144,7 @@ class InstagramClient:
                 L.load_session_from_file(self.username, filename=SessionManager.get_session_file(self.username))
                 profile = instaloader.Profile.from_username(L.context, target)
                 
-                # Map expected fields
-                return {
+                user_dict = {
                     "id": str(profile.userid),
                     "username": profile.username,
                     "full_name": profile.full_name,
@@ -158,6 +157,41 @@ class InstagramClient:
                     "business_phone_number": profile.business_phone_number,
                     "profile_pic_url_hd": profile.profile_pic_url
                 }
+                
+                # Map Recent Posts for advanced OSINT modules (SNA, Stylometry, Audit, Locations)
+                try:
+                    import itertools
+                    edges = []
+                    for post in itertools.islice(profile.get_posts(), 12):
+                        node = {
+                            "id": str(post.mediaid),
+                            "shortcode": post.shortcode,
+                            "owner": {"id": str(profile.userid)},
+                            "taken_at_timestamp": int(post.date_utc.timestamp()),
+                            "edge_media_preview_like": {"count": post.likes},
+                            "edge_media_to_comment": {"count": post.comments},
+                            "is_video": post.is_video,
+                            "video_view_count": getattr(post, 'video_view_count', 0),
+                        }
+                        if post.caption:
+                            node["edge_media_to_caption"] = {"edges": [{"node": {"text": post.caption}}]}
+                        if getattr(post, 'location', None):
+                            node["location"] = {
+                                "name": post.location.name,
+                                "lat": getattr(post.location, 'lat', None),
+                                "lng": getattr(post.location, 'lng', None),
+                            }
+                        if post.tagged_users:
+                            node["edge_media_to_tagged_user"] = {
+                                "edges": [{"node": {"user": {"username": tu}}} for tu in post.tagged_users]
+                            }
+                        edges.append({"node": node})
+                    user_dict["edge_owner_to_timeline_media"] = {"edges": edges}
+                except Exception:
+                    # Ignore private profiles or rate limits on post fetching
+                    user_dict["edge_owner_to_timeline_media"] = {"edges": []}
+                    
+                return user_dict
             except Exception as e:
                 pass # Fallback to standard request
 
@@ -196,19 +230,30 @@ class InstagramClient:
 
     def initiate_password_reset(self, target: str) -> Dict[str, Any]:
         """Trigger the Instagram password reset flow to enumerate masked contacts."""
-        url = "https://i.instagram.com/api/v1/users/lookup/"
+        # Use web API which respects standard browser auth and CSRF
+        url = "https://www.instagram.com/api/v1/users/lookup/"
+        
+        # Grab CSRF Token from cookies (Instagram sets one even for unauthenticated guests on first visit)
+        cookies = self.context.cookies()
+        csrf = next((c['value'] for c in cookies if c['name'] == 'csrftoken'), "missing_csrf")
+        
         headers = {
-            "User-Agent": "Instagram 114.0.0.38.120 Android (23/6.0.1; 640dpi; 1440x2560; samsung; SM-G935F; hero2lte; samsungexynos8890; en_US; 170469888)",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "User-Agent": settings.USER_AGENT,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrf,
+            "X-IG-App-ID": "936619743392459",
+            "X-Instagram-AJAX": "1",
+            "X-Requested-With": "XMLHttpRequest"
         }
         
         # Prepare the urlencoded body
-        body = f"q={target}&waterfall_id=123456789"
+        body = f"q={target}"
         
         fetch_options = {
             "method": "POST",
             "headers": headers,
-            "body": body
+            "body": body,
+            "credentials": "include"
         }
         
         fetch_script = """
@@ -227,4 +272,13 @@ class InstagramClient:
         """
         
         result = self.page.evaluate(fetch_script, [url, fetch_options])
-        return result.get('data', {})
+        
+        status_code = result.get('status')
+        data = result.get('data', {})
+        
+        if status_code == 429:
+            raise RateLimitError("Instagram rate limit (429) hit for password recovery endpoint.")
+        if status_code and status_code >= 400:
+            raise NetworkError(f"HTTP {status_code}: {data}")
+            
+        return data
