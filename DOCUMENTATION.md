@@ -203,7 +203,7 @@ These modules implement high-level investigative techniques derived from OSINT i
 ### 10.1. Account Recovery Enumeration (Forgot PWD Pivot)
 **Command**: `recovery`  
 **Theory**: Triggers the Instagram password reset initiation to capture the "masked" contact tip (e.g., `s***h@g***.com`).  
-**Use Case**: Verifying if a candidate email found via `fwersemail` is the actual administrative backbone of the target account.
+**Use Case**: Verifying if a candidate email found via OSINT tools is the actual administrative backbone of the target account.
 
 ### 10.2. Co-Visitation Analysis
 **Command**: `intersect <username2>`  

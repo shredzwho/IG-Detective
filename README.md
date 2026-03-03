@@ -107,6 +107,9 @@ You can run IG-Detective entirely within Docker to avoid dependency issues. The 
    | `sna` | Perform Social Network Analysis to map the "Inner Circle" |
    | `temporal`| Calculate timezone and sleep behavior via DBSCAN |
    | `stylometry` | NLP linguistic profiling on captions (Emojis & N-grams) |
+   | `recovery` | Trigger password reset flow to reveal masked contacts |
+   | `intersect` | Cross-reference GPS/Time intersections between two targets |
+   | `audit` | Statistical detection of inauthentic bot activity |
    | `help` | Display the interactive help menu |
    | `exit` | Exit the CLI cleanly |
 
