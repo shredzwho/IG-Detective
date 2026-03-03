@@ -282,3 +282,15 @@ class InstagramClient:
             raise NetworkError(f"HTTP {status_code}: {data}")
             
         return data
+
+    def close(self) -> None:
+        """Gracefully terminate the headless browser and Playwright context to prevent EPIPE Node.js errors."""
+        try:
+            if hasattr(self, 'context') and self.context:
+                self.context.close()
+            if hasattr(self, 'browser') and self.browser:
+                self.browser.close()
+            if hasattr(self, 'playwright') and self.playwright:
+                self.playwright.stop()
+        except Exception:
+            pass

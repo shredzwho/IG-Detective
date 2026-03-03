@@ -341,4 +341,8 @@ class IGDetectiveShell(cmd2.Cmd):
     def do_exit(self, args):
         """Exit the utility cleanly."""
         console.print("[bold green]Tearing down ig-detective instances... Goodbye![/bold green]")
+        try:
+            self.api.close()
+        except Exception:
+            pass
         return True
