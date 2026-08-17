@@ -28,4 +28,4 @@ COPY . /app
 RUN mkdir -p /app/data
 
 # Run the interactive shell
-ENTRYPOINT ["python3", "detective.py"]
+ENTRYPOINT ["python3", "main.py"]
