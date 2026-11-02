@@ -14,7 +14,7 @@ numpy>=2.4.2
 networkx>=3.6.1
 pandas>=3.0.1
 scikit-learn>=1.6.0
-nltk>=3.9.1
+nltk>=3.10.4
 
 # Visual Output
 folium>=0.20.0
@@ -22,4 +22,4 @@ folium>=0.20.0
 # Testing
 pytest>=9.0.2
 requests-mock>=1.12.1
-nltk==3.9.3
+nltk==3.10.4
